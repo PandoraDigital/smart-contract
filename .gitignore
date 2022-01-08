@@ -1,0 +1,10 @@
+
+build
+bin
+node_modules
+.env
+.env.fork
+.idea
+contracts/ape
+package-lock.json
+.chainId

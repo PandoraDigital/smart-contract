@@ -30,9 +30,9 @@ A next-gen community-owned DeFi, NFT and Gamification protocol.
 - Description: Stake LP token to earn reward token.
 - File path: contracts\0.6.x\contracts\pool\Farming.sol
 
-## 7. PSRStakingPool:
-- Description: Stake an ERC20 standard token to earn reward token.
-- File path: contracts\0.6.x\contracts\pool\PSRStakingPool.sol
+## 7. Staking:
+- Description: Stake an token to earn another token.
+- File path: contracts\0.8.x\contracts\staking\Staking.sol
 
 ## 8. TradingPool:
 - Description: Swap to earn reward token.

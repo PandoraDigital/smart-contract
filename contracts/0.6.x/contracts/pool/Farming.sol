@@ -8,7 +8,7 @@ import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "../libraries/SignedSafeMath.sol";
 import "../libraries/BoringMath.sol";
 import "../interfaces/IRewarder.sol";
-import "../interfaces/IPAN.sol";
+import "../interfaces/IMinter.sol";
 
 interface IMigratorChef {
     function migrate(IERC20 token) external returns (IERC20);
@@ -30,7 +30,7 @@ contract Farming is Ownable{
         uint64 allocPoint;
     }
 
-    IPAN public immutable PAN;
+    IMinter public minter;
     IMigratorChef public migrator;
     IRewarder[] public rewarder;
 
@@ -55,8 +55,8 @@ contract Farming is Ownable{
     event LogUpdatePool(uint256 indexed pid, uint64 lastRewardBlock, uint256 lpSupply, uint256 accRewardPerShare);
     event LogRewardPerBlock(uint256 rewardPerBlock);
 
-    constructor(address _reward) public {
-        PAN = IPAN(_reward);
+    constructor(address _minter) public {
+        minter = IMinter(_minter);
     }
 
     function poolLength() public view returns (uint256 pools) {
@@ -83,6 +83,10 @@ contract Farming is Ownable{
         poolInfo[_pid].allocPoint = _allocPoint.to64();
         if (overwrite) { rewarder[_pid] = _rewarder; }
         emit LogSetPool(_pid, _allocPoint, overwrite ? _rewarder : rewarder[_pid], overwrite);
+    }
+
+    function changeMinter(address _newMinter) external onlyOwner {
+        minter = IMinter(_newMinter);
     }
 
     function setRewardPerBlock(uint256 _rewardPerBlock) public onlyOwner {
@@ -191,7 +195,7 @@ contract Farming is Ownable{
 
         // Interactions
         if (_pendingReward != 0) {
-            PAN.mint(to, _pendingReward);
+            minter.transfer(to, _pendingReward);
         }
 
         IRewarder _rewarder = rewarder[pid];
@@ -216,7 +220,7 @@ contract Farming is Ownable{
         user.amount = user.amount.sub(amount);
 
         // Interactions
-        PAN.mint(to, _pendingReward);
+        minter.transfer(to, _pendingReward);
 
         IRewarder _rewarder = rewarder[pid];
         if (address(_rewarder) != address(0)) {

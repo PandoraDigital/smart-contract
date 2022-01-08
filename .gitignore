@@ -8,3 +8,4 @@ node_modules
 contracts/ape
 package-lock.json
 .chainId
+contracts/**/**/**.json

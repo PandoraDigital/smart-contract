@@ -10,7 +10,7 @@ import "../libraries/BoringMath.sol";
 import "../libraries/SwapLibrary.sol";
 
 import "../interfaces/IRewarder.sol";
-import "../interfaces/IPAN.sol";
+import "../interfaces/IMinter.sol";
 import "../interfaces/ISwapFactory.sol";
 import "../interfaces/IOracle.sol";
 
@@ -35,7 +35,7 @@ contract TradingPool is Ownable {
         uint256 lastRebased;
     }
 
-    IPAN public PAN;
+    IMinter public minter;
     ISwapFactory public factory;
 
 
@@ -63,8 +63,8 @@ contract TradingPool is Ownable {
     event LogSetPool(address pair, uint256 allocPoint);
     event LogRewardPerBlock(uint256 rewardPerBlock);
 
-    constructor(address _PAN, address _router, address _factory) public {
-        PAN = IPAN(_PAN);
+    constructor(address _minter, address _router, address _factory) public {
+        minter = IMinter(_minter);
         factory = ISwapFactory(_factory);
         swapRouter = _router;
     }
@@ -119,6 +119,10 @@ contract TradingPool is Ownable {
         totalAllocPoint = totalAllocPoint.sub(poolInfo[_pair].allocPoint).add(_allocPoint);
         poolInfo[_pair].allocPoint = _allocPoint;
         emit LogSetPool(_pair, _allocPoint);
+    }
+
+    function changeMinter(address _newMinter) external onlyOwner {
+        minter = IMinter(_newMinter);
     }
 
     function setRewardPerBlock(uint256 _rewardPerBlock) public onlyOwner {
@@ -296,7 +300,7 @@ contract TradingPool is Ownable {
 
                 // Interactions
                 if (_pending != 0) {
-                    PAN.mint(_to, _pending);
+                    minter.transfer(_to, _pending);
                 }
                 emit Harvest(msg.sender, _pair, _pending);
             }

@@ -8,7 +8,7 @@ import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "../libraries/SignedSafeMath.sol";
 import "../libraries/BoringMath.sol";
 import "../interfaces/IRewarder.sol";
-import "../interfaces/IPAN.sol";
+import "../interfaces/IMinter.sol";
 
 
 
@@ -29,7 +29,7 @@ contract PSRStaking is Ownable{
     }
 
 
-    IPAN public immutable PAN;
+    IMinter public minter;
 
     IRewarder[] public rewarder;
 
@@ -54,8 +54,8 @@ contract PSRStaking is Ownable{
     event LogUpdatePool(uint256 indexed pid, uint64 lastRewardBlock, uint256 lpSupply, uint256 accRewardPerShare);
     event LogRewardPerBlock(uint256 rewardPerBlock);
 
-    constructor(address _reward) public {
-        PAN = IPAN(_reward);
+    constructor(address _minter) public {
+        minter = IMinter(_minter);
     }
 
     function poolLength() public view returns (uint256 pools) {
@@ -88,6 +88,10 @@ contract PSRStaking is Ownable{
     function setRewardPerBlock(uint256 _rewardPerBlock) public onlyOwner {
         rewardPerBlock = _rewardPerBlock;
         emit LogRewardPerBlock(_rewardPerBlock);
+    }
+
+    function changeMinter(address _newMinter) external onlyOwner {
+        minter = IMinter(_newMinter);
     }
 
     function pendingReward(uint256 _pid, address _user) external view returns (uint256 pending) {
@@ -175,7 +179,7 @@ contract PSRStaking is Ownable{
 
         // Interactions
         if (_pendingReward != 0) {
-            PAN.mint(to, _pendingReward);
+            minter.transfer(to, _pendingReward);
         }
 
         IRewarder _rewarder = rewarder[pid];
@@ -200,7 +204,7 @@ contract PSRStaking is Ownable{
         user.amount = user.amount.sub(amount);
 
         // Interactions
-        PAN.mint(to, _pendingReward);
+        minter.transfer(to, _pendingReward);
 
         IRewarder _rewarder = rewarder[pid];
         if (address(_rewarder) != address(0)) {

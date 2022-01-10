@@ -35,6 +35,7 @@ contract Staking is Ownable {
     mapping (address => bool) public addedRewards;
     IERC20[] public lpToken;
     IERC20[] public reward;
+    uint256[] public rewardOption; // 0 : mint | 1 : transfer
 
     address public PAN;
     IMinter public minter;
@@ -105,7 +106,7 @@ contract Staking is Ownable {
         _user.amount += _amount;
         _user.rewardDebt += int256(_amount * _pool.accRewardPerShare / ACC_REWARD_PRECISION);
 
-
+        lpToken[_pid].safeTransferFrom(msg.sender, address(this), _amount);
         emit Deposit(msg.sender, _pid, _amount, _to);
     }
 
@@ -132,7 +133,7 @@ contract Staking is Ownable {
         // Effects
         _user.rewardDebt = _accumulatedReward;
 
-       transferReward(reward[_pid], _to, _pendingReward);
+        transferReward(_pid, _to, _pendingReward);
         emit Harvest(msg.sender, _pid, _pendingReward);
     }
 
@@ -147,17 +148,16 @@ contract Staking is Ownable {
         _user.rewardDebt = _accumulatedReward - int256(_amount * _pool.accRewardPerShare / ACC_REWARD_PRECISION);
         _user.amount -= _amount;
 
-        transferReward(reward[_pid], _to, _pendingReward);
         lpToken[_pid].safeTransfer(_to, _amount);
+        transferReward(_pid, _to, _pendingReward);
 
         emit Withdraw(msg.sender, _pid, _amount, _to);
         emit Harvest(msg.sender, _pid, _pendingReward);
     }
 
-    function massHarvest(uint256[] calldata _pids, address _to) public {
-        uint256 len = _pids.length;
-        for (uint256 i = 0; i < len; ++i) {
-            harvest(_pids[i], _to);
+    function harvestAll(address _to) public {
+        for (uint256 i = 0; i < poolInfo.length; i++) {
+            harvest(i, _to);
         }
     }
 
@@ -175,9 +175,10 @@ contract Staking is Ownable {
 
 
 
-    function transferReward(IERC20 _reward, address _user, uint256 _amount) internal {
+    function transferReward(uint256 _pid, address _user, uint256 _amount) internal {
+        IERC20 _reward = reward[_pid];
         if (_amount > 0) {
-            if (address(_reward) != PAN) {
+            if (address(_reward) != PAN || rewardOption[_pid] == 1) {
                 _reward.safeTransfer(_user, _amount);
             } else {
                 minter.transfer(_user, _amount);
@@ -187,11 +188,12 @@ contract Staking is Ownable {
 
     /* ========== RESTRICTED FUNCTIONS ========== */
 
-    function add(IERC20 _lpToken, IERC20 _reward) public onlyOwner {
+    function add(IERC20 _lpToken, IERC20 _reward, uint256 _rewardOption) public onlyOwner {
         require(!addedPools[address(_lpToken)][address(_reward)], 'Staking: added before');
         uint256 lastRewardBlock = block.timestamp;
         lpToken.push(_lpToken);
         reward.push(_reward);
+        rewardOption.push(_rewardOption);
 
         poolInfo.push(PoolInfo({
             accRewardPerShare: 0,
@@ -204,7 +206,6 @@ contract Staking is Ownable {
         addedRewards[address(_reward)] = true;
         emit LogPoolAddition(lpToken.length - 1, _lpToken, _reward);
     }
-
 
     function allocateMoreRewards(uint256 _pid, uint256 _addedReward, uint256 _days) external onlyOwner {
         PoolInfo storage _pool = poolInfo[_pid];
@@ -220,7 +221,7 @@ contract Staking is Ownable {
                 _pool.endRewardTime = _pool.endRewardTime +  (_days * (1 days));
             }
         }
-        if (address(lpToken[_pid]) != PAN) {
+        if (address(reward[_pid]) != PAN || rewardOption[_pid] == 1) {
             reward[_pid].safeTransferFrom(msg.sender, address(this), _addedReward);
         }
         emit LogRewardPerSecond(_newRewardPerSecond);

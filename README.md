@@ -100,10 +100,11 @@ A next-gen community-owned DeFi, NFT and Gamification protocol.
 - Description: Price feed for PAN token.
 - File path: contracts\0.6.x\contracts\oracle\PANOracle.sol
 
-### 24. WBNBOracle:
+## 24. WBNBOracle:
 - Description: Price feed for WBNB token.
 - File path: contracts\0.6.x\contracts\oracle\WBNBOracle.sol
 
+# Private Sale:
 ## 25. Lock:
 - Description: Contract for private sale.
 - File path: contracts\0.8.x\contracts\others\Lock.sol

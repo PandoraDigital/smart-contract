@@ -3,21 +3,23 @@
 pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/proxy/Initializable.sol";
+
 import "../libraries/UQ112x112.sol";
 import "../libraries/FixedPoint.sol";
 import "../interfaces/IPairOracle.sol";
 import "../interfaces/ISwapPair.sol";
 import "./Operator.sol";
 
-contract PairOracle is Operator, IPairOracle {
+contract PairOracle is Operator, IPairOracle, Initializable {
     using FixedPoint for *;
     using SafeMath for uint256;
 
     uint256 public PERIOD = 600; // 10-minute TWAP (time-weighted average price)
 
-    ISwapPair public immutable pair;
-    address public immutable token0;
-    address public immutable token1;
+    ISwapPair public pair;
+    address public token0;
+    address public token1;
 
     uint256 public price0CumulativeLast;
     uint256 public price1CumulativeLast;
@@ -25,7 +27,7 @@ contract PairOracle is Operator, IPairOracle {
     FixedPoint.uq112x112 public price0Average;
     FixedPoint.uq112x112 public price1Average;
 
-    constructor(address pairAddress) public {
+    function initialize(address pairAddress) external onlyOwner initializer {
         ISwapPair _pair = ISwapPair(pairAddress);
         pair = _pair;
         token0 = _pair.token0();
@@ -74,13 +76,13 @@ contract PairOracle is Operator, IPairOracle {
 
     // produces the cumulative price using counterfactuals to save gas and avoid a call to sync.
     function currentCumulativePrices(address _pair)
-        internal
-        view
-        returns (
-            uint256 price0Cumulative,
-            uint256 price1Cumulative,
-            uint32 blockTimestamp
-        )
+    internal
+    view
+    returns (
+        uint256 price0Cumulative,
+        uint256 price1Cumulative,
+        uint32 blockTimestamp
+    )
     {
         blockTimestamp = currentBlockTimestamp();
         price0Cumulative = ISwapPair(_pair).price0CumulativeLast();

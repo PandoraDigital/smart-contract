@@ -222,7 +222,8 @@ contract TradingPool is Ownable {
         }
     }
 
-    function estimationHashRate(uint256 _amountIn, address[] memory _path) external view returns(uint256 _total) {
+    function estimationHashRate(uint256 _amountIn, address[] memory _path) external view returns(uint256[] memory) {
+        uint256[] memory _hashRate = new uint256[](_path.length - 1);
         uint256[] memory _amounts = SwapLibrary.getAmountsOut(address(factory), _amountIn, _path);
         for (uint256 i = 0; i < _amounts.length - 1; i++) {
             address _pair = SwapLibrary.pairFor(address(factory), _path[i], _path[i + 1]);
@@ -231,10 +232,10 @@ contract TradingPool is Ownable {
                 if (oracles[_path[i + 1]] != address(0)) {
                     _amount = IOracle(oracles[_path[i + 1]]).consult().mul(_amounts[i + 1]);
                 }
-                _total = _total.add(_amount.mul(poolInfo[_pair].allocPoint));
+                _hashRate[i] = _amount.mul(poolInfo[_pair].allocPoint) / totalAllocPoint;
             }
         }
-        return _total / totalAllocPoint;
+        return _hashRate;
     }
 
     function enter(address _account, address _input, address _output, uint256 _amount) public onlySwapRouter returns(bool) {

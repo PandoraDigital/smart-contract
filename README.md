@@ -94,16 +94,19 @@ A next-gen community-owned DeFi, NFT and Gamification protocol.
 
 ## 22. PSROracle:
 - Description: Price feed for PSR token.
-- File path:contracts\0.6.x\contracts\oracle\PSROracle.sol
+- File path: contracts\0.6.x\contracts\oracle\PSROracle.sol
 
 ## 23. PANOracle:
 - Description: Price feed for PAN token.
-- File path:contracts\0.6.x\contracts\oracle\PANOracle.sol
+- File path: contracts\0.6.x\contracts\oracle\PANOracle.sol
 
 ### 24. WBNBOracle:
 - Description: Price feed for WBNB token.
-- File path:contracts\0.6.x\contracts\oracle\WBNBOracle.sol
+- File path: contracts\0.6.x\contracts\oracle\WBNBOracle.sol
 
+## 25. Lock:
+- Description: Contract for private sale.
+- File path: contracts\0.8.x\contracts\others\Lock.sol
 
 
 

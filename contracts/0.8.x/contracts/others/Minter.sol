@@ -46,4 +46,8 @@ contract Minter is Ownable, ReentrancyGuard {
         require(_amount <= PAN.balanceOf(address(this)), 'Minter: not enough PAN');
         PAN.safeTransfer(_to, _amount);
     }
+
+    function setOperator(address _operator, bool _status) external onlyOwner{
+        operators[_operator] = _status;
+    }
 }

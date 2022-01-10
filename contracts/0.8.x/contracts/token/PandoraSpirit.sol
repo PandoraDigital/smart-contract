@@ -7,8 +7,8 @@ import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 contract PandoraSpirit is ERC20Burnable {
     uint256 public totalBurned;
 
-    constructor(uint256 _initialSupply) ERC20('Pandora Spirit', 'PSR'){
-        _mint(msg.sender, _initialSupply);
+    constructor(uint256 _initialSupply, address _owner) ERC20('Pandora Spirit', 'PSR'){
+        _mint(_owner, _initialSupply);
     }
 
     /*----------------------------EXTERNAL FUNCTIONS----------------------------*/

@@ -25,7 +25,7 @@ A next-gen community-owned DeFi, NFT and Gamification protocol.
 - Description: liquidity pool for a token pair.
 - File path: contracts\0.6.x\contracts\swap\SwapPair.sol
 
-# Farming:
+# Earning:
 ## 6. Farming:
 - Description: Stake LP token to earn reward token.
 - File path: contracts\0.6.x\contracts\pool\Farming.sol

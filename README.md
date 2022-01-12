@@ -4,7 +4,7 @@ A next-gen community-owned DeFi, NFT and Gamification protocol.
 # Tokens:
 
 ## 1. PandoraSpirit:
-- Description: Governance token (SPR).
+- Description: Governance token (PSR).
 - File path: contracts\0.8.x\contracts\token\PandoraSpirit.sol
 
 ## 2. Pandorium:

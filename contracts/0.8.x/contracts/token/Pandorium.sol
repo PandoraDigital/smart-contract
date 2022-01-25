@@ -9,11 +9,8 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 contract Pandorium is ERC20Burnable, Ownable {
     uint256 public totalBurned;
     EnumerableSet.AddressSet private minters;
-    address public devFund;
-    uint256 public devFundPercent = 10;
 
-    constructor(address _devFund) ERC20('Pandorium', 'PAN'){
-        devFund = _devFund;
+    constructor() ERC20('Pandorium', 'PAN'){
     }
 
     /*----------------------------EXTERNAL FUNCTIONS----------------------------*/
@@ -29,20 +26,10 @@ contract Pandorium is ERC20Burnable, Ownable {
     }
 
     function mint(address _account, uint256 _amount) public onlyMinter {
-        uint256 _toDev = _amount * devFundPercent / 100;
-        _mint(devFund, _toDev);
-        _mint(_account, _amount - _toDev);
+        _mint(_account, _amount);
     }
 
     /*----------------------------RESTRICT FUNCTIONS----------------------------*/
-
-    function changeDevFundPercent(uint256 _newPercent) external onlyOwner {
-        devFundPercent = _newPercent;
-    }
-
-    function changeDevFund(address _newAddr) external onlyOwner {
-        devFund = _newAddr;
-    }
 
     function addMinter(address _addMinter) external onlyOwner returns (bool) {
         require(_addMinter != address(0), "Token: _addMinter is the zero address");

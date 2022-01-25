@@ -1,3 +1,4 @@
+//SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.4;
 
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
@@ -8,7 +9,7 @@ contract MockERC20 is ERC20Burnable {
         string memory symbol,
         address to,
         uint256 supply
-    ) public ERC20(name, symbol) {
+    ) ERC20(name, symbol) {
         _mint(to, supply);
     }
 

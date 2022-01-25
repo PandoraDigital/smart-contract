@@ -79,9 +79,12 @@ contract Farming is Ownable{
     }
 
     function set(uint256 _pid, uint256 _allocPoint, IRewarder _rewarder, bool overwrite) public onlyOwner {
+        updatePool(_pid);
         totalAllocPoint = totalAllocPoint.sub(poolInfo[_pid].allocPoint).add(_allocPoint);
         poolInfo[_pid].allocPoint = _allocPoint.to64();
-        if (overwrite) { rewarder[_pid] = _rewarder; }
+        if (overwrite) {
+            rewarder[_pid] = _rewarder;
+        }
         emit LogSetPool(_pid, _allocPoint, overwrite ? _rewarder : rewarder[_pid], overwrite);
     }
 
@@ -90,6 +93,7 @@ contract Farming is Ownable{
     }
 
     function setRewardPerBlock(uint256 _rewardPerBlock) public onlyOwner {
+        massUpdatePools(lpToken);
         rewardPerBlock = _rewardPerBlock;
         emit LogRewardPerBlock(_rewardPerBlock);
     }
@@ -168,7 +172,9 @@ contract Farming is Ownable{
     function withdraw(uint256 pid, uint256 amount, address to) public {
         PoolInfo memory pool = updatePool(pid);
         UserInfo storage user = userInfo[pid][msg.sender];
-
+        if (amount == 0) {
+            amount = user.amount;
+        }
         // Effects
         user.rewardDebt = user.rewardDebt.sub(int256(amount.mul(pool.accRewardPerShare) / ACC_PAN_PRECISION));
         user.amount = user.amount.sub(amount);

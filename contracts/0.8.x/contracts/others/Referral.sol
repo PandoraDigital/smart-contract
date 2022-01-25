@@ -5,28 +5,33 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "../interfaces/IPAN.sol";
+import "../interfaces/IMinter.sol";
+
 
 contract Referral is Ownable {
     address public operator;
     uint256 public lastUpdateBlock;
     uint256 public PANPerBlock;
     IPAN public PAN;
+    IMinter public minter;
+
 
     modifier onlyOperator() {
         require(msg.sender == operator, 'Referral: caller is not operator');
         _;
     }
 
-    constructor(address _PAN, uint256 _PANPerBlock) {
+    constructor(address _PAN, uint256 _PANPerBlock, IMinter _minter) {
         PAN = IPAN(_PAN);
         PANPerBlock = _PANPerBlock;
         operator = msg.sender;
         lastUpdateBlock = block.number;
+        minter = _minter;
     }
 
     function mintReward() public {
         uint256 _amount = (block.number - lastUpdateBlock) * PANPerBlock;
-        PAN.mint(address(this), _amount);
+        minter.transfer(address(this), _amount);
         lastUpdateBlock = block.number;
     }
 

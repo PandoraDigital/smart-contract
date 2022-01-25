@@ -50,8 +50,9 @@ contract TradingPool is Ownable {
     address public swapRouter;
     uint256 public totalAllocPoint;
     uint256 public rewardPerBlock;
-    uint256 public rebaseDuration = 2400;
+    uint256 public rebaseDuration = 1200;
     uint256 public rebaseSpeed = 90;
+    uint256 private constant MAX_REBASE = 20;
 
     uint256 private constant ACC_PAN_PRECISION = 1e12;
     uint256 private constant ORACLE_PRECISION = 1e6;
@@ -62,6 +63,9 @@ contract TradingPool is Ownable {
     event LogPoolAddition(address pair, uint256 allocPoint);
     event LogSetPool(address pair, uint256 allocPoint);
     event LogRewardPerBlock(uint256 rewardPerBlock);
+    event SwapAddressChanged(address router, address factory);
+    event RebaseDurationChanged(uint256 rebaseDuration);
+    event RebaseSpeedChanged(uint256 rebaseSpeed);
 
     constructor(address _minter, address _router, address _factory) public {
         minter = IMinter(_minter);
@@ -78,6 +82,9 @@ contract TradingPool is Ownable {
         uint256 res = _totalHashRate;
         if (block.number - _lastRebased >= rebaseDuration && _totalHashRate > 0) {
             uint256 _rebaseTime = block.number / rebaseDuration - _lastRebased / rebaseDuration;
+            if (_rebaseTime > 20) {
+                return 0;
+            }
             for (uint256 i = 0; i < _rebaseTime; i++) {
                 res = res.mul(rebaseSpeed) / 100;
             }
@@ -106,7 +113,7 @@ contract TradingPool is Ownable {
             totalHashRate : 0,
             lastRebased : rebaseDuration * (block.number / rebaseDuration),
             accPANPerHashRate: 0
-            });
+        });
         addedPairs[address(_pair)] = true;
         emit LogPoolAddition(_pair, _allocPoint);
     }
@@ -116,6 +123,7 @@ contract TradingPool is Ownable {
     }
 
     function set(address _pair, uint256 _allocPoint) public onlyOwner {
+        updatePool(_pair);
         totalAllocPoint = totalAllocPoint.sub(poolInfo[_pair].allocPoint).add(_allocPoint);
         poolInfo[_pair].allocPoint = _allocPoint;
         emit LogSetPool(_pair, _allocPoint);
@@ -126,6 +134,7 @@ contract TradingPool is Ownable {
     }
 
     function setRewardPerBlock(uint256 _rewardPerBlock) public onlyOwner {
+        massUpdatePools(pairs);
         rewardPerBlock = _rewardPerBlock;
         emit LogRewardPerBlock(_rewardPerBlock);
     }
@@ -159,20 +168,25 @@ contract TradingPool is Ownable {
     function pendingReward(address _pair, address _account) external view returns (uint256 _pending) {
         PoolInfo memory _pool = poolInfo[_pair];
         UserInfo memory _user = userInfo[_pair][_account];
-        uint256[] memory _accReward = new uint[](block.number / rebaseDuration + 1);
+        uint256[] memory _accReward = new uint[](21);
         uint256 _totalHashRate = _pool.totalHashRate;
         uint256 _userHashRate = _user.hashRate;
+        uint256 _startIndex = _pool.lastRebased / rebaseDuration + 1;
         _pending = 0;
         if (_userHashRate > 0) {
             if (block.number - _pool.lastRebased >= rebaseDuration) {
-                for (uint256 i = _pool.lastRebased / rebaseDuration + 1; i <= block.number / rebaseDuration; i++) {
+                uint256 _nRebase = block.number / rebaseDuration;
+                if (_nRebase > MAX_REBASE + _pool.lastRebased / rebaseDuration + 1) {
+                    _nRebase = MAX_REBASE + _pool.lastRebased / rebaseDuration + 1;
+                }
+                for (uint256 i = _pool.lastRebased / rebaseDuration + 1; i <= _nRebase; i++) {
                     uint256 _delta = rebaseDuration;
                     if (rebaseDuration.mul(i - 1) < _pool.lastRewardBlock && _pool.lastRewardBlock < rebaseDuration.mul(i)) {
                         _delta = rebaseDuration.mul(i).sub(_pool.lastRewardBlock);
                     }
                     uint256 _reward = _delta.mul(rewardPerBlock).mul(_pool.allocPoint) / totalAllocPoint;
                     _pool.accPANPerHashRate = _pool.accPANPerHashRate.add((_reward.mul(ACC_PAN_PRECISION) / _totalHashRate).to128());
-                    _accReward[i] = _pool.accPANPerHashRate;
+                    _accReward[i - _startIndex] = _pool.accPANPerHashRate;
                     _totalHashRate = _totalHashRate.mul(rebaseSpeed) / 100;
                 }
                 _pool.totalHashRate = _totalHashRate;
@@ -186,13 +200,24 @@ contract TradingPool is Ownable {
                 _pool.accPANPerHashRate = _pool.accPANPerHashRate.add(_reward.mul(ACC_PAN_PRECISION) / _pool.totalHashRate);
             }
 
-
             if (_user.lastRebased > 0) {
                 if (block.number - _user.lastRebased >= rebaseDuration) {
-                    for (uint256 i = _user.lastRebased / rebaseDuration + 1; i <= block.number / rebaseDuration; i++) {
+                    uint256 _nRebase = block.number / rebaseDuration;
+                    if (_nRebase > MAX_REBASE + _user.lastRebased / rebaseDuration + 1) {
+                        _nRebase = MAX_REBASE + _user.lastRebased / rebaseDuration + 1;
+                    }
+                    for (uint256 i = _user.lastRebased / rebaseDuration + 1; i <= _nRebase; i++) {
                         uint256 _decAmount = _userHashRate.mul(100 - rebaseSpeed) / 100;
-                        _user.rewardDebt = _user.rewardDebt.sub(int256(_decAmount.mul(_accReward[i] + accPANPerHashRateData[_pair][i]) / ACC_PAN_PRECISION));
+                        uint256 _acc = accPANPerHashRateData[_pair][i];
+                        if (i >= _startIndex) {
+                            _acc = _accReward[i - _startIndex];
+                        }
+                        _user.rewardDebt = _user.rewardDebt.sub(int256(_decAmount.mul(_acc) / ACC_PAN_PRECISION));
                         _userHashRate = _userHashRate.mul(rebaseSpeed) / 100;
+                    }
+                    if (block.number / rebaseDuration > MAX_REBASE + _user.lastRebased / rebaseDuration + 1) {
+                        _user.rewardDebt = _user.rewardDebt.sub(int256(_userHashRate.mul(_pool.accPANPerHashRate) / ACC_PAN_PRECISION));
+                        _userHashRate = 0;
                     }
                 }
             }
@@ -256,10 +281,18 @@ contract TradingPool is Ownable {
                 uint256 _userHashRate = _user.hashRate;
                 if (_user.lastRebased > 0) {
                     if (block.number - _user.lastRebased >= rebaseDuration) {
-                        for (uint256 i = _user.lastRebased / rebaseDuration + 1; i <= block.number / rebaseDuration; i++) {
+                        uint256 _nRebase = block.number / rebaseDuration;
+                        if (_nRebase > MAX_REBASE + _user.lastRebased / rebaseDuration + 1) {
+                            _nRebase = MAX_REBASE + _user.lastRebased / rebaseDuration + 1;
+                        }
+                        for (uint256 i = _user.lastRebased / rebaseDuration + 1; i <= _nRebase; i++) {
                             uint256 _decAmount = _userHashRate.mul(100 - rebaseSpeed) / 100;
                             _user.rewardDebt = _user.rewardDebt.sub(int256(_decAmount.mul(accPANPerHashRateData[_pair][i]) / ACC_PAN_PRECISION));
                             _userHashRate = _userHashRate.mul(rebaseSpeed) / 100;
+                        }
+                        if (block.number / rebaseDuration > MAX_REBASE + _user.lastRebased / rebaseDuration + 1) {
+                            _user.rewardDebt = _user.rewardDebt.sub(int256(_userHashRate.mul(_pool.accPANPerHashRate) / ACC_PAN_PRECISION));
+                            _userHashRate = 0;
                         }
                     }
                 }
@@ -286,12 +319,21 @@ contract TradingPool is Ownable {
             uint256 _userHashRate = _user.hashRate;
             if (_userHashRate > 0) {
                 if (block.number - _user.lastRebased >= rebaseDuration) {
-                    for (uint256 i = _user.lastRebased / rebaseDuration + 1; i <= block.number / rebaseDuration; i++) {
+                    uint256 _nRebase = block.number / rebaseDuration;
+                    if (_nRebase > MAX_REBASE + _user.lastRebased / rebaseDuration + 1) {
+                        _nRebase = MAX_REBASE + _user.lastRebased / rebaseDuration + 1;
+                    }
+                    for (uint256 i = _user.lastRebased / rebaseDuration + 1; i <= _nRebase; i++) {
                         uint256 _decAmount = _userHashRate.mul(100 - rebaseSpeed) / 100;
                         _user.rewardDebt = _user.rewardDebt.sub(int256(_decAmount.mul(accPANPerHashRateData[_pair][i]) / ACC_PAN_PRECISION));
                         _userHashRate = _userHashRate.mul(rebaseSpeed) / 100;
                     }
                 }
+                if (block.number / rebaseDuration > MAX_REBASE + _user.lastRebased / rebaseDuration + 1) {
+                    _user.rewardDebt = _user.rewardDebt.sub(int256(_userHashRate.mul(_pool.accPANPerHashRate) / ACC_PAN_PRECISION));
+                    _userHashRate = 0;
+                }
+
                 uint256 _pending = int256(_userHashRate.mul(_pool.accPANPerHashRate) / ACC_PAN_PRECISION).sub(_user.rewardDebt).toUInt256();
 
                 _pool.totalHashRate = _pool.totalHashRate.sub(_userHashRate);
@@ -317,13 +359,16 @@ contract TradingPool is Ownable {
     function setSwapAddress(address _router, address _factory) external onlyOwner{
         factory = ISwapFactory(_factory);
         swapRouter = _router;
+        emit setSwapAddress(_router, factory);
     }
 
     function setRebaseDuration(uint256 _newDuration) external onlyOwner {
         rebaseDuration = _newDuration;
+        emit RebaseDurationChanged(_newDuration);
     }
 
     function setRebaseSpeed(uint256 _newSpeed) external onlyOwner {
         rebaseSpeed = _newSpeed;
+        emit RebaseSpeedChanged(_newSpeed);
     }
 }

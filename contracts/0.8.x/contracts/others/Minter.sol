@@ -15,17 +15,21 @@ contract Minter is Ownable, ReentrancyGuard {
         int256 rewardDebt;
     }
 
-    mapping (address => bool) private operators;
+    mapping (address => bool) public operators;
     uint256 public PANPerBlock;
     uint256 public lastMinted;
     IPAN public PAN;
+    address public devFund;
+    uint256 public devFundPercent = 1000;
+    uint256 public constant PRECISION = 10000;
 
     modifier onlyOperators() {
         require(operators[msg.sender] == true, "Minter: caller is not the operators");
         _;
     }
 
-    constructor (IPAN _PAN, uint256 _PANPerBlock, uint256 _startMint) {
+    constructor (address _devFund, IPAN _PAN, uint256 _PANPerBlock, uint256 _startMint) {
+        devFund = _devFund;
         PANPerBlock = _PANPerBlock;
         PAN = _PAN;
         lastMinted = _startMint;
@@ -34,7 +38,9 @@ contract Minter is Ownable, ReentrancyGuard {
     function update() public {
         if (block.number > lastMinted) {
             uint256 _amount = (block.number - lastMinted) * PANPerBlock;
+            uint256 _toDev = _amount * devFundPercent / PRECISION;
             PAN.mint(address(this), _amount);
+            PAN.safeTransfer(devFund, _toDev);
             lastMinted = block.number;
         }
     }
@@ -49,5 +55,13 @@ contract Minter is Ownable, ReentrancyGuard {
 
     function setOperator(address _operator, bool _status) external onlyOwner{
         operators[_operator] = _status;
+    }
+
+    function changeDevFundPercent(uint256 _newPercent) external onlyOwner {
+        devFundPercent = _newPercent;
+    }
+
+    function changeDevFund(address _newAddr) external onlyOwner {
+        devFund = _newAddr;
     }
 }

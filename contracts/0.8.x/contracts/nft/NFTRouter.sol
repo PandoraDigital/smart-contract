@@ -36,6 +36,7 @@ contract NFTRouter is Ownable{
     uint256 public createPandoBoxFee;
     uint256 public upgradeBaseFee;
     uint256 public PSRRatio = 80;
+    uint256 public slippage = 8000000000;
     address[] public PANToPSR;
 
     /*----------------------------INITIALIZE----------------------------*/
@@ -114,8 +115,9 @@ contract NFTRouter is Ownable{
                 if (_option == 0) { // only PAN
                     PAN.safeTransferFrom(msg.sender, address(this), createPandoBoxFee);
                     uint256 _amountSwap = createPandoBoxFee * (100 - PSRRatio) / 100;
+                    uint256 _minAmount = _amountSwap * slippage / PRECISION;
                     IERC20(PAN).safeApprove(address(swapRouter), _amountSwap);
-                    swapRouter.swapExactTokensForTokens(_amountSwap, 0, PANToPSR, address(this), block.timestamp + 300);
+                    swapRouter.swapExactTokensForTokens(_amountSwap, _minAmount, PANToPSR, address(this), block.timestamp + 300);
                     ERC20Burnable(address(PAN)).burn(PAN.balanceOf(address(this)));
                     ERC20Burnable(address(PSR)).burn(PSR.balanceOf(address(this)));
                 } else {
@@ -233,6 +235,11 @@ contract NFTRouter is Ownable{
 
     function setSwapRouter(address _swapRouter) external onlyOwner {
         swapRouter = ISwapRouter02(_swapRouter);
+    }
+
+    function setSlippage(uint256 _value) external onlyOwner {
+        require(_value <= PRECISION, 'NFT Router: > precision');
+        slippage = _value;
     }
 
     event BoxCreated(address indexed receiver, uint256 level, uint256 option, uint256 indexed newBoxId);

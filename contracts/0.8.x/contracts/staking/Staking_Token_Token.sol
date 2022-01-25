@@ -1,4 +1,4 @@
-
+//SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.4;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
-contract BlueIceStakingV2 is Ownable {
+contract StakingV2 is Ownable {
     using SafeERC20 for IERC20;
 
     struct UserInfo {
@@ -195,6 +195,7 @@ contract BlueIceStakingV2 is Ownable {
     /// @notice Sets the reward per second to be distributed. Can only be called by the owner.
     /// @param _rewardPerSecond The amount of reward to be distributed per second.
     function setRewardPerSecond(uint256 _rewardPerSecond) internal {
+        updatePool();
         rewardPerSecond = _rewardPerSecond;
         emit LogRewardPerSecond(_rewardPerSecond);
     }

@@ -43,6 +43,7 @@ contract Lock is Ownable, Pausable, ReentrancyGuard  {
             pending : _unlockAmount
             });
         }
+        emit Locked(_account, _amount, _unlockAmount);
     }
 
     function pending(address _account) public view returns(uint256 _pending) {
@@ -73,6 +74,7 @@ contract Lock is Ownable, Pausable, ReentrancyGuard  {
             _lockedData.pending = 0;
         }
         PSR.safeTransfer(_to, _unlockAmount);
+        emit Unlocked(_to, _unlockAmount);
     }
 
     function emergencyWithdraw(address _to) external whenPaused {
@@ -85,14 +87,17 @@ contract Lock is Ownable, Pausable, ReentrancyGuard  {
     /* ========== RESTRICTED FUNCTIONS ========== */
 
     function setStartLock(uint256 _value) external onlyOwner {
-        startLock = block.timestamp;
+        startLock = _value;
+        emit StartLockChanged(_value);
     }
     function setUnlockDuration(uint256 _newValue) external onlyOwner {
         unlockDuration = _newValue;
+        emit UnlockDurationChanged(_newValue);
     }
 
     function setLockedTime(uint256 _newValue) external onlyOwner {
         lockedTime = _newValue;
+        emit LockedTimeChanged(_newValue);
     }
 
     function pause() external onlyOwner {
@@ -102,4 +107,11 @@ contract Lock is Ownable, Pausable, ReentrancyGuard  {
     function unpause() external onlyOwner {
         _unpause();
     }
+
+    /* ========== EVENTS ========== */
+    event Locked(address account, uint256 amount, uint256 unlockAmount);
+    event Unlocked(address to, uint256 amount);
+    event StartLockChanged(uint256 startLock);
+    event UnlockDurationChanged(uint256 unlockDuration);
+    event LockedTimeChanged(uint256 lockedTime);
 }

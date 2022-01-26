@@ -92,8 +92,8 @@ contract Farming is Ownable{
         minter = IMinter(_newMinter);
     }
 
-    function setRewardPerBlock(uint256 _rewardPerBlock) public onlyOwner {
-        massUpdatePools(lpToken);
+    function setRewardPerBlock(uint256 _rewardPerBlock, uint256[] calldata _pids) public onlyOwner {
+        massUpdatePools(_pids);
         rewardPerBlock = _rewardPerBlock;
         emit LogRewardPerBlock(_rewardPerBlock);
     }
@@ -128,7 +128,7 @@ contract Farming is Ownable{
         pending = int256(user.amount.mul(accRewardPerShare) / ACC_PAN_PRECISION).sub(user.rewardDebt).toUInt256();
     }
 
-    function massUpdatePools(uint256[] calldata pids) external {
+    function massUpdatePools(uint256[] calldata pids) public {
         uint256 len = pids.length;
         for (uint256 i = 0; i < len; ++i) {
             updatePool(pids[i]);

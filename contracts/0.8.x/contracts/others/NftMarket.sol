@@ -16,6 +16,8 @@ contract NftMarket is Ownable, Pausable, ReentrancyGuard {
 
     uint256 constant public ONE_HUNDRED_PERCENT = 10000; // 100%
 
+    uint256 constant public MIN_PRICE = 1000000000;
+
     event SystemFeePercentUpdated(uint256 percent);
     event AdminWalletUpdated(address wallet);
     event Erc20WhitelistUpdated(address[] erc20s, bool status);
@@ -157,7 +159,7 @@ contract NftMarket is Ownable, Pausable, ReentrancyGuard {
     {
         address msgSender = _msgSender();
 
-        require(price > 0, "NftMarket: can not sell 0");
+        require(price >= MIN_PRICE, "NftMarket: price is invalid");
 
         uint256 oldAsk = currentAsks[erc721][tokenId];
 
@@ -214,7 +216,7 @@ contract NftMarket is Ownable, Pausable, ReentrancyGuard {
         inWhitelist(erc721, erc20)
         returns (uint256)
     {
-        require(price > 0, "NftMarket: can not bid 0");
+        require(price >= MIN_PRICE, "NftMarket: price is invalid");
 
         uint256 askId = currentAsks[erc721][tokenId];
 

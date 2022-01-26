@@ -133,8 +133,8 @@ contract TradingPool is Ownable {
         minter = IMinter(_newMinter);
     }
 
-    function setRewardPerBlock(uint256 _rewardPerBlock) public onlyOwner {
-        massUpdatePools(pairs);
+    function setRewardPerBlock(uint256 _rewardPerBlock, address[] calldata _pairs) public onlyOwner {
+        massUpdatePools(_pairs);
         rewardPerBlock = _rewardPerBlock;
         emit LogRewardPerBlock(_rewardPerBlock);
     }
@@ -176,9 +176,6 @@ contract TradingPool is Ownable {
         if (_userHashRate > 0) {
             if (block.number - _pool.lastRebased >= rebaseDuration) {
                 uint256 _nRebase = block.number / rebaseDuration;
-                if (_nRebase > MAX_REBASE + _pool.lastRebased / rebaseDuration + 1) {
-                    _nRebase = MAX_REBASE + _pool.lastRebased / rebaseDuration + 1;
-                }
                 for (uint256 i = _pool.lastRebased / rebaseDuration + 1; i <= _nRebase; i++) {
                     uint256 _delta = rebaseDuration;
                     if (rebaseDuration.mul(i - 1) < _pool.lastRewardBlock && _pool.lastRewardBlock < rebaseDuration.mul(i)) {
@@ -216,7 +213,11 @@ contract TradingPool is Ownable {
                         _userHashRate = _userHashRate.mul(rebaseSpeed) / 100;
                     }
                     if (block.number / rebaseDuration > MAX_REBASE + _user.lastRebased / rebaseDuration + 1) {
-                        _user.rewardDebt = _user.rewardDebt.sub(int256(_userHashRate.mul(_pool.accPANPerHashRate) / ACC_PAN_PRECISION));
+                        uint256 _acc = accPANPerHashRateData[_pair][_nRebase + 1];
+                        if (_nRebase + 1 >= _startIndex) {
+                            _acc = _accReward[_nRebase + 1 - _startIndex];
+                        }
+                        _user.rewardDebt = _user.rewardDebt.sub(int256(_userHashRate.mul(_acc) / ACC_PAN_PRECISION));
                         _userHashRate = 0;
                     }
                 }
@@ -225,7 +226,7 @@ contract TradingPool is Ownable {
         }
     }
 
-    function massUpdatePools(address[] calldata _pairs) external {
+    function massUpdatePools(address[] calldata _pairs) public {
         uint256 len = _pairs.length;
         for (uint256 i = 0; i < len; ++i) {
             updatePool(_pairs[i]);
@@ -282,16 +283,17 @@ contract TradingPool is Ownable {
                 if (_user.lastRebased > 0) {
                     if (block.number - _user.lastRebased >= rebaseDuration) {
                         uint256 _nRebase = block.number / rebaseDuration;
-                        if (_nRebase > MAX_REBASE + _user.lastRebased / rebaseDuration + 1) {
-                            _nRebase = MAX_REBASE + _user.lastRebased / rebaseDuration + 1;
+                        uint256 _t = MAX_REBASE + _user.lastRebased / rebaseDuration + 1;
+                        if (_nRebase > _t) {
+                            _nRebase = _t;
                         }
                         for (uint256 i = _user.lastRebased / rebaseDuration + 1; i <= _nRebase; i++) {
                             uint256 _decAmount = _userHashRate.mul(100 - rebaseSpeed) / 100;
                             _user.rewardDebt = _user.rewardDebt.sub(int256(_decAmount.mul(accPANPerHashRateData[_pair][i]) / ACC_PAN_PRECISION));
                             _userHashRate = _userHashRate.mul(rebaseSpeed) / 100;
                         }
-                        if (block.number / rebaseDuration > MAX_REBASE + _user.lastRebased / rebaseDuration + 1) {
-                            _user.rewardDebt = _user.rewardDebt.sub(int256(_userHashRate.mul(_pool.accPANPerHashRate) / ACC_PAN_PRECISION));
+                        if (block.number / rebaseDuration > _nRebase) {
+                            _user.rewardDebt = _user.rewardDebt.sub(int256(_userHashRate.mul(accPANPerHashRateData[_pair][_nRebase + 1]) / ACC_PAN_PRECISION));
                             _userHashRate = 0;
                         }
                     }
@@ -359,7 +361,7 @@ contract TradingPool is Ownable {
     function setSwapAddress(address _router, address _factory) external onlyOwner{
         factory = ISwapFactory(_factory);
         swapRouter = _router;
-        emit setSwapAddress(_router, factory);
+        emit SwapAddressChanged(_router, _factory);
     }
 
     function setRebaseDuration(uint256 _newDuration) external onlyOwner {

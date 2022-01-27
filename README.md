@@ -30,11 +30,11 @@ A next-gen community-owned DeFi, NFT and Gamification protocol.
 - Description: Stake LP token to earn reward token.
 - File path: contracts\0.6.x\contracts\pool\Farming.sol
 
-## 7. Staking:
+## 7. StakingV1:
 - Description: Stake PSR earn PAN.
 - File path: contracts\0.8.x\contracts\staking\Staking_PSR_PAN.sol
 
-## 8. BlueIceStakingV2:
+## 8. StakingV2:
 - Description: Stake token to earn token.
 - File path: contracts\0.8.x\contracts\staking\Staking_Token_Token.sol
 

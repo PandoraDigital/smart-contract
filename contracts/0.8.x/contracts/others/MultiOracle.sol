@@ -9,6 +9,7 @@ contract MultiOracle is Ownable {
 
     function setOracle(address _token, address _oracle) external onlyOwner{
         oracles[_token] = _oracle;
+        emit OracleChanged(_token, _oracle);
     }
 
     function consult(address _token) external view returns(uint256) {
@@ -18,4 +19,6 @@ contract MultiOracle is Ownable {
         }
         return 0;
     }
+
+    event OracleChanged(address indexed _token, address indexed oracle);
 }

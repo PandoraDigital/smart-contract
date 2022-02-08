@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-contract Lock is Ownable, Pausable, ReentrancyGuard  {
+contract Lock is Ownable, Pausable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     IERC20 public PSR;
@@ -29,6 +29,7 @@ contract Lock is Ownable, Pausable, ReentrancyGuard  {
     }
 
     /* ========== PUBLIC FUNCTIONS ========== */
+
     function lock(address _account, uint256 _amount, uint256 _unlockAmount) external {
         if (startLock == 0) {
             startLock = block.timestamp;
@@ -64,10 +65,10 @@ contract Lock is Ownable, Pausable, ReentrancyGuard  {
 
     function unlock(address _to) external whenNotPaused nonReentrant {
         LockedData storage _lockedData = data[msg.sender];
-        require(_lockedData.total > _lockedData.unlockedAmounts, 'Locked : cannot unlock');
+        require(_lockedData.total > _lockedData.unlockedAmounts, 'Locked: cannot unlock');
 
         uint256 _unlockAmount = pending(msg.sender);
-        require(_unlockAmount > 0, 'Locked :  invalid unlock amount');
+        require(_unlockAmount > 0, 'Locked:  invalid unlock amount');
 
         _lockedData.unlockedAmounts += _unlockAmount;
         if (_lockedData.pending > 0) {
@@ -87,17 +88,20 @@ contract Lock is Ownable, Pausable, ReentrancyGuard  {
     /* ========== RESTRICTED FUNCTIONS ========== */
 
     function setStartLock(uint256 _value) external onlyOwner {
+        uint256 oldStartLock = startLock;
         startLock = _value;
-        emit StartLockChanged(_value);
+        emit StartLockChanged(oldStartLock, _value);
     }
     function setUnlockDuration(uint256 _newValue) external onlyOwner {
+        uint256 oldUnlockDuration = unlockDuration;
         unlockDuration = _newValue;
-        emit UnlockDurationChanged(_newValue);
+        emit UnlockDurationChanged(oldUnlockDuration, _newValue);
     }
 
     function setLockedTime(uint256 _newValue) external onlyOwner {
+        uint256 oldLockedTime = lockedTime;
         lockedTime = _newValue;
-        emit LockedTimeChanged(_newValue);
+        emit LockedTimeChanged(oldLockedTime, _newValue);
     }
 
     function pause() external onlyOwner {
@@ -109,9 +113,10 @@ contract Lock is Ownable, Pausable, ReentrancyGuard  {
     }
 
     /* ========== EVENTS ========== */
+
     event Locked(address account, uint256 amount, uint256 unlockAmount);
     event Unlocked(address to, uint256 amount);
-    event StartLockChanged(uint256 startLock);
-    event UnlockDurationChanged(uint256 unlockDuration);
-    event LockedTimeChanged(uint256 lockedTime);
+    event StartLockChanged(uint256 oldStartLock, uint256 newStartLock);
+    event UnlockDurationChanged(uint256 oldUnlockDuration, uint256 newUnlockDuration);
+    event LockedTimeChanged(uint256 oldLockedTime, uint256 newLockedTime);
 }

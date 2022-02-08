@@ -158,15 +158,19 @@ contract StakingV1 is Ownable {
         PSR.safeTransfer(to, amount);
         emit EmergencyWithdraw(msg.sender, amount, to);
     }
-
     /* ========== RESTRICTED FUNCTIONS ========== */
 
     /// @notice Sets the reward per second to be distributed. Can only be called by the owner.
     /// @param _rewardPerBlock The amount of reward to be distributed per second.
     function setRewardPerBlock(uint256 _rewardPerBlock) public onlyOwner {
         updatePool();
+        uint256 oldRewardPerBlock = rewardPerBlock;
         rewardPerBlock = _rewardPerBlock;
-        emit LogRewardPerBlock(_rewardPerBlock);
+        emit RewardPerBlockChanged(oldRewardPerBlock, _rewardPerBlock);
+    }
+
+    function changeMinter(address _newMinter) external onlyOwner {
+        minter = IMinter(_newMinter);
     }
 
     /* =============== EVENTS ==================== */
@@ -176,6 +180,6 @@ contract StakingV1 is Ownable {
     event EmergencyWithdraw(address indexed user, uint256 amount, address indexed to);
     event Harvest(address indexed user, uint256 amount);
     event LogUpdatePool(uint256 lastRewardBlock, uint256 lpSupply, uint256 accRewardPerShare);
-    event LogRewardPerBlock(uint256 rewardPerBlock);
+    event RewardPerBlockChanged(uint256 oldRewardPerBlock, uint256 newRewardPerBlock);
     event FundRescued(address indexed receiver, uint256 amount);
 }

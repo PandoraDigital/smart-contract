@@ -53,7 +53,9 @@ contract Farming is Ownable{
     event LogPoolAddition(uint256 indexed pid, uint256 allocPoint, IERC20 indexed lpToken, IRewarder indexed rewarder);
     event LogSetPool(uint256 indexed pid, uint256 allocPoint, IRewarder indexed rewarder, bool overwrite);
     event LogUpdatePool(uint256 indexed pid, uint64 lastRewardBlock, uint256 lpSupply, uint256 accRewardPerShare);
-    event LogRewardPerBlock(uint256 rewardPerBlock);
+    event RewardPerBlockChanged(uint256 oldRewardPerBlock, uint256 newRewardPerBlock);
+    event MinterChanged(address oldMinter, address newMinter);
+    event MigratorChanged(address oldMigrator, address newMigrator);
 
     constructor(address _minter) public {
         minter = IMinter(_minter);
@@ -63,8 +65,11 @@ contract Farming is Ownable{
         pools = poolInfo.length;
     }
 
-    function add(uint256 allocPoint, IERC20 _lpToken, IRewarder _rewarder) public onlyOwner {
+    function add(uint256 allocPoint, IERC20 _lpToken, IRewarder _rewarder, bool _withUpdate) public onlyOwner {
         require(addedTokens[address(_lpToken)] == false, "Token already added");
+        if (_withUpdate) {
+            massUpdatePools();
+        }
         totalAllocPoint = totalAllocPoint.add(allocPoint);
         lpToken.push(_lpToken);
         rewarder.push(_rewarder);
@@ -89,17 +94,22 @@ contract Farming is Ownable{
     }
 
     function changeMinter(address _newMinter) external onlyOwner {
+        address oldMinter = address(minter);
         minter = IMinter(_newMinter);
+        emit MinterChanged(oldMinter, _newMinter);
     }
 
-    function setRewardPerBlock(uint256 _rewardPerBlock, uint256[] calldata _pids) public onlyOwner {
-        massUpdatePools(_pids);
+    function setRewardPerBlock(uint256 _rewardPerBlock) public onlyOwner {
+        massUpdatePools();
+        uint256 oldRewardPerBlock = rewardPerBlock;
         rewardPerBlock = _rewardPerBlock;
-        emit LogRewardPerBlock(_rewardPerBlock);
+        emit RewardPerBlockChanged(oldRewardPerBlock, _rewardPerBlock);
     }
 
-    function setMigrator(IMigratorChef _migrator) public onlyOwner {
-        migrator = _migrator;
+    function setMigrator(address _migrator) public onlyOwner {
+        address oldMigrator = address(migrator);
+        migrator = IMigratorChef(_migrator);
+        emit MigratorChanged(oldMigrator, _migrator);
     }
 
     function migrate(uint256 _pid) public {
@@ -128,10 +138,10 @@ contract Farming is Ownable{
         pending = int256(user.amount.mul(accRewardPerShare) / ACC_PAN_PRECISION).sub(user.rewardDebt).toUInt256();
     }
 
-    function massUpdatePools(uint256[] calldata pids) public {
-        uint256 len = pids.length;
-        for (uint256 i = 0; i < len; ++i) {
-            updatePool(pids[i]);
+    function massUpdatePools() public {
+        uint256 length = poolInfo.length;
+        for (uint256 pid = 0; pid < length; ++pid) {
+            updatePool(pid);
         }
     }
 

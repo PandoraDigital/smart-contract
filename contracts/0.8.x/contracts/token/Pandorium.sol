@@ -33,11 +33,13 @@ contract Pandorium is ERC20Burnable, Ownable {
 
     function addMinter(address _addMinter) external onlyOwner returns (bool) {
         require(_addMinter != address(0), "Token: _addMinter is the zero address");
+        emit MinterChanged(_addMinter, true);
         return EnumerableSet.add(minters, _addMinter);
     }
 
     function delMinter(address _delMinter) external onlyOwner returns (bool) {
         require(_delMinter != address(0), "Token: _delMinter is the zero address");
+        emit MinterChanged(_delMinter, false);
         return EnumerableSet.remove(minters, _delMinter);
     }
 
@@ -58,4 +60,8 @@ contract Pandorium is ERC20Burnable, Ownable {
         require(isMinter(msg.sender), "caller is not the minter");
         _;
     }
+
+    /*----------------------------EVENTS----------------------------*/
+
+    event MinterChanged(address indexed minter, bool status);
 }

@@ -21,6 +21,10 @@ contract SwapRouter is ISwapRouter02, Ownable {
     address public override tradingPool;
     mapping (address => bool) public isWhiteListed;
 
+
+    event TradingPoolChanged(address oldTradingPool, address newTradingPool);
+    event WhiteListChanged(address contractAddr, bool status);
+
     modifier ensure(uint256 deadline) {
         require(deadline >= block.timestamp, 'SwapRouter: EXPIRED');
         _;
@@ -37,14 +41,18 @@ contract SwapRouter is ISwapRouter02, Ownable {
 
     function addWhiteList (address contractAddr) public onlyOwner {
         isWhiteListed[contractAddr] = true;
+        emit WhiteListChanged(contractAddr, isWhiteListed[contractAddr]);
     }
 
     function removeWhiteList (address contractAddr) public onlyOwner {
         isWhiteListed[contractAddr] = false;
+        emit WhiteListChanged(contractAddr, isWhiteListed[contractAddr]);
     }
 
     function setTradingPool(address _tradingPool) public onlyOwner {
+        address oldTradingPool = tradingPool;
         tradingPool = _tradingPool;
+        emit TradingPoolChanged(oldTradingPool, _tradingPool);
     }
 
     // **** ADD LIQUIDITY ****

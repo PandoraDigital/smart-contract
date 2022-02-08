@@ -15,7 +15,7 @@ import "../interfaces/IDataStorage.sol";
 import "../interfaces/IOracle.sol";
 import "../interfaces/ISwapRouter02.sol";
 
-contract NFTRouter is Ownable{
+contract NFTRouter is Ownable {
     using SafeERC20 for IERC20;
 
     mapping (uint256 => uint256) private pandoBoxCreated;
@@ -40,6 +40,7 @@ contract NFTRouter is Ownable{
     address[] public PANToPSR;
 
     /*----------------------------INITIALIZE----------------------------*/
+
     constructor (
         address _pandoBox,
         address _droidBot,
@@ -65,6 +66,7 @@ contract NFTRouter is Ownable{
     }
 
     /*----------------------------INTERNAL FUNCTIONS----------------------------*/
+
     function getPandoBoxLv() internal view returns(uint256) {
         uint256[] memory _creatingProbability = IDataStorage(dataStorage).getPandoBoxCreatingProbability();
         uint256 _randSeed = Random.computerSeed(0) % PRECISION + 1;
@@ -107,6 +109,7 @@ contract NFTRouter is Ownable{
     }
 
     /*----------------------------EXTERNAL FUNCTIONS----------------------------*/
+    
     function createPandoBox(uint256 _option) external {
         require(block.timestamp >= startTime, 'Router: not started');
         uint256 _ndays = (block.timestamp - startTime) / 1 days;
@@ -187,62 +190,110 @@ contract NFTRouter is Ownable{
     }
 
     /*----------------------------RESTRICT FUNCTIONS----------------------------*/
+
     function setPandoBoxPerDay(uint256 _value) external onlyOwner {
+        uint256 oldPandoBoxPerDay = pandoBoxPerDay;
         pandoBoxPerDay = _value;
+        emit PandoBoxPerDayChanged(oldPandoBoxPerDay, _value);
     }
 
     function setCreatePandoBoxFee(uint256 _newFee) external onlyOwner {
+        uint256 oldCreatePandoBoxFee = createPandoBoxFee;
         createPandoBoxFee = _newFee;
+        emit CreateFeeChanged(oldCreatePandoBoxFee, _newFee);
     }
 
     function setUpgradeBaseFee(uint256 _newFee) external onlyOwner {
+        uint256 oldUpgradeBaseFee = upgradeBaseFee;
         upgradeBaseFee = _newFee;
+        emit UpgradeFeeChanged(oldUpgradeBaseFee, _newFee);
     }
 
-    function setJackpotAddress(address _addr) external onlyOwner {
+    function setPandoPotAddress(address _addr) external onlyOwner {
+        address oldPandoPot = address(pandoPot);
         pandoPot = IPandoPot(_addr);
+        emit PandoPotChanged(oldPandoPot, _addr);
     }
 
     function setDataStorageAddress(address _addr) external onlyOwner {
+        address oldDataStorage = address(dataStorage);
         dataStorage = IDataStorage(_addr);
+        emit DataStorageChanged(oldDataStorage, _addr);
     }
 
     function setPANOracle(address _addr) external onlyOwner {
+        address oldPANOracle = address(PANOracle);
         PANOracle = IOracle(_addr);
+        emit PANOracleChanged(oldPANOracle, _addr);
     }
 
     function setPSROracle(address _addr) external onlyOwner {
+        address oldPSROracle = address(PSROracle);
         PSROracle = IOracle(_addr);
+        emit PSROracleChanged(oldPSROracle, _addr);
     }
 
-    function setPath(address [] memory _path) external onlyOwner {
+    function setPath(address[] memory _path) external onlyOwner {
+        address[] memory oldPath = PANToPSR;
         PANToPSR = _path;
+        emit PANtoPSRChanged(oldPath, _path);
     }
 
-    function setPSRRatio(uint256 _ratio) external onlyOwner {
+    function setPSRRatio(uint256 _ratio) external onlyOwner { 
+        uint256 oldPSRRatio = PSRRatio;
         PSRRatio = _ratio;
+        emit PSRRatioChanged(oldPSRRatio, _ratio);
     }
 
     function setNftAddress(address _droidBot, address _pandoBox) external onlyOwner {
-        pandoBox = IPandoBox(_pandoBox);
+        address oldDroidBot = address(droidBot);
+        address oldPandoBox = address(pandoBox);
         droidBot = IDroidBot(_droidBot);
+        pandoBox = IPandoBox(_pandoBox);
+        emit DroidBotChanged(oldDroidBot, _droidBot);
+        emit PandoBoxChanged(oldPandoBox, _pandoBox);
     }
 
     function setTokenAddress(address _PSR, address _PAN) external onlyOwner {
-        PAN = IERC20(_PAN);
+        address oldPSR = address(PSR);
+        address oldPAN = address(PAN);
         PSR = IERC20(_PSR);
+        PAN = IERC20(_PAN);
+        emit PSRChanged(oldPSR, _PSR);
+        emit PANChanged(oldPAN, _PAN);
     }
 
     function setSwapRouter(address _swapRouter) external onlyOwner {
+        address oldSwapRouter = address(swapRouter);
         swapRouter = ISwapRouter02(_swapRouter);
+        emit SwapRouterChanged(oldSwapRouter, _swapRouter);
     }
 
     function setSlippage(uint256 _value) external onlyOwner {
         require(_value <= PRECISION, 'NFT Router: > precision');
+        uint256 oldSlippage = slippage;
         slippage = _value;
+        emit SlippageChanged(oldSlippage, _value);
     }
+
+    /*----------------------------EVENTS----------------------------*/
 
     event BoxCreated(address indexed receiver, uint256 level, uint256 option, uint256 indexed newBoxId);
     event BotCreated(address indexed receiver, uint256 indexed boxId, uint256 indexed newBotId);
     event BotUpgraded(address indexed user, uint256 indexed bot0Id, uint256 indexed bot1Id);
+    event PandoBoxPerDayChanged(uint256 oldPandoBoxPerDay, uint256 newPandoBoxPerDay);
+    event CreateFeeChanged(uint256 oldFee, uint256 newFee);
+    event UpgradeFeeChanged(uint256 oldFee, uint256 newFee);
+    event PandoPotChanged(address indexed oldPandoPot, address indexed newPandoPot);
+    event DataStorageChanged(address indexed oldDataStorate, address indexed newDataStorate);
+    event PANOracleChanged(address indexed oldPANOracle, address indexed newPANOracle);
+    event PSROracleChanged(address indexed oldPSROracle, address indexed newPSROracle);
+    event PANtoPSRChanged(address[] indexed oldPath, address[] indexed newPath);
+    event PSRRatioChanged(uint256 oldRatio, uint256 newRatio);
+    event PandoBoxChanged(address indexed oldPandoBox, address indexed newPandoBox);
+    event DroidBotChanged(address indexed oldDroidBot, address indexed newDroidBot);
+    event PSRChanged(address indexed oldPSR, address indexed newPSR);
+    event PANChanged(address indexed oldPAN, address indexed newPAN);
+    event SwapRouterChanged(address indexed oldSwapRouter, address indexed newSwapRouter);
+    event SlippageChanged(uint256 oldSlippage, uint256 newSlippage);
 }

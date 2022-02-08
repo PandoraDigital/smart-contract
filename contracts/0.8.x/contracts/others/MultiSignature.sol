@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 contract MultiSignature{
     using EnumerableSet for EnumerableSet.AddressSet;
+    
     mapping(bytes32 => uint256) private confirmations;
     mapping(bytes32 => mapping(address => bool)) private isConfirmed;
 
@@ -17,6 +18,7 @@ contract MultiSignature{
     }
 
     /* ========== MODIFIER FUNCTIONS ========== */
+
     modifier onlyWallet() {
         require(msg.sender == address(this));
         _;

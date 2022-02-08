@@ -17,13 +17,13 @@ contract Treasury is Ownable {
     IUniswapV2Factory public factory;
     address public team;
     address public pandoPool;
-    address public jackpot;
+    address public pandoPot;
     address private immutable usdt;
     address private immutable weth;
 
     uint256 public teamPercent = 1000;
     uint256 public pandoPoolPercent = 7000;
-    uint256 public jackpotPercent = 2000;
+    uint256 public pandoPotPercent = 2000;
 
     uint256 public constant PRECISION = 10000;
 
@@ -48,14 +48,14 @@ contract Treasury is Ownable {
         address _weth,
         address _team,
         address _pandoPool,
-        address _jackpot
+        address _pandoPot
     ) public {
         factory = IUniswapV2Factory(_factory);
         usdt = _usdt;
         weth = _weth;
         team = _team;
         pandoPool = _pandoPool;
-        jackpot = _jackpot;
+        pandoPot = _pandoPot;
     }
 
     // F1 - F10: OK
@@ -163,7 +163,7 @@ contract Treasury is Ownable {
             if (token0 == usdt) {
                 usdtOut = amount;
             } else if (token0 == weth) {
-                usdtOut = _toBUSD(weth, amount);
+                usdtOut = _toUSDT(weth, amount);
             } else {
                 address bridge = bridgeFor(token0);
                 amount = _swap(token0, bridge, amount);
@@ -171,19 +171,19 @@ contract Treasury is Ownable {
             }
         } else if (token0 == usdt) {
             // eg. SUSHI - ETH
-            usdtOut = _toBUSD(token1, amount1).add(amount0);
+            usdtOut = _toUSDT(token1, amount1).add(amount0);
         } else if (token1 == usdt) {
             // eg. USDT - SUSHI
-            usdtOut = _toBUSD(token0, amount0).add(amount1);
+            usdtOut = _toUSDT(token0, amount0).add(amount1);
         } else if (token0 == weth) {
             // eg. ETH - USDC
-            usdtOut = _toBUSD(
+            usdtOut = _toUSDT(
                 weth,
                 _swap(token1, weth, amount1).add(amount0)
             );
         } else if (token1 == weth) {
             // eg. USDT - ETH
-            usdtOut = _toBUSD(
+            usdtOut = _toUSDT(
                 weth,
                 _swap(token0, weth, amount0).add(amount1)
             );
@@ -255,7 +255,7 @@ contract Treasury is Ownable {
 
     // F1 - F10: OK
     // C1 - C24: OK
-    function _toBUSD(address token, uint256 amountIn)
+    function _toUSDT(address token, uint256 amountIn)
         internal
         returns (uint256 amountOut)
     {
@@ -266,21 +266,36 @@ contract Treasury is Ownable {
     function distribute() external onlyOperator {
         uint256 _amount = IERC20(usdt).balanceOf(address(this));
         IERC20(usdt).safeTransfer(team, _amount * teamPercent / PRECISION);
-        IERC20(usdt).safeTransfer(jackpot, _amount * jackpotPercent / PRECISION);
+        IERC20(usdt).safeTransfer(pandoPot, _amount * pandoPotPercent / PRECISION);
         IERC20(usdt).safeTransfer(pandoPool, _amount * pandoPoolPercent / PRECISION);
     }
 
-    function changeTargetAddress(address _team, address _pandoPool, address _jackpot) external onlyOwner {
+    function changeTargetAddress(address _team, address _pandoPool, address _pandoPot) external onlyOwner {
+        address oldTeam = team;
+        address oldPandoPool = pandoPool;
+        address oldPandoPot = pandoPot;
         team = _team;
         pandoPool = _pandoPool;
-        jackpot = _jackpot;
+        pandoPot = _pandoPot;
+        emit TeamChanged(oldTeam, _team);
+        emit PandoPoolChanged(oldPandoPool, _pandoPool);
+        emit JackpotChanged(oldPandoPot, _pandoPot);
     }
 
     function setOperator(address _operator, bool _status) external onlyOwner {
         operators[_operator] = _status;
+        emit OperatorChanged(_operator, _status);
     }
 
     function setFactory(address _factory) external onlyOwner {
+        address oldFactory = address(factory);
         factory = IUniswapV2Factory(_factory);
+        emit FactoryChanged(oldFactory, _factory);
     }
+    event Distrubuted(uint256 amount);
+    event TeamChanged(address oldTeam, address newTeam);
+    event PandoPoolChanged(address oldPandoPool, address newPandoPool);
+    event JackpotChanged(address oldJackpot, address newJackpot);
+    event OperatorChanged(address operator, bool status);
+    event FactoryChanged(address oldFactory, address newFactory);
 }

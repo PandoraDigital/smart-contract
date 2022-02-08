@@ -6,12 +6,11 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-import "../libraries/NFTLib.sol";
 import "../libraries/Random.sol";
+import "../libraries/NFTLib.sol";
 import "../interfaces/IDataStorage.sol";
 
-contract PandoBox is ERC721Burnable, Ownable
-{
+contract PandoBox is ERC721Burnable, Ownable {
     using EnumerableSet for EnumerableSet.AddressSet;
     EnumerableSet.AddressSet private minters;
     uint256 public totalSupply;
@@ -19,6 +18,7 @@ contract PandoBox is ERC721Burnable, Ownable
     string baseURI;
 
     /*----------------------------CONSTRUCTOR----------------------------*/
+
     constructor(string memory _URI) ERC721("PandoBox NFT Token", "PBOX")
     {
         baseURI = _URI;
@@ -51,11 +51,13 @@ contract PandoBox is ERC721Burnable, Ownable
 
     function addMinter(address _addMinter) external onlyOwner returns (bool) {
         require(_addMinter != address(0), "Token: _addMinter is the zero address");
+        emit MinterChanged(_addMinter, true);
         return EnumerableSet.add(minters, _addMinter);
     }
 
     function delMinter(address _delMinter) external onlyOwner returns (bool) {
         require(_delMinter != address(0), "Token: _delMinter is the zero address");
+        emit MinterChanged(_delMinter, false);
         return EnumerableSet.remove(minters, _delMinter);
     }
 
@@ -80,5 +82,7 @@ contract PandoBox is ERC721Burnable, Ownable
     }
 
     /*----------------------------EVENTS----------------------------*/
-    event PandoBoxCreated(address indexed receiver,uint256 indexed id, uint256 level);
+
+    event PandoBoxCreated(address indexed receiver,uint256 indexed id, uint256 level);    
+    event MinterChanged(address indexed minter, bool status);
 }

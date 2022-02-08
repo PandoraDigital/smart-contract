@@ -15,7 +15,6 @@ contract Referral is Ownable {
     IPAN public PAN;
     IMinter public minter;
 
-
     modifier onlyOperator() {
         require(msg.sender == operator, 'Referral: caller is not operator');
         _;
@@ -50,13 +49,19 @@ contract Referral is Ownable {
     }
 
     function setPanPerBlock(uint256 _v) external onlyOwner {
+        uint256 oldPANPerBlock = PANPerBlock;
         PANPerBlock = _v;
+        emit PANPerBlockChanged(oldPANPerBlock, _v);
     }
 
     function setOperator(address _newOperator) external onlyOwner {
+        address oldOperator = operator;
         operator = _newOperator;
+        emit OperatorChanged(oldOperator, _newOperator);
     }
 
     event Distributed(address account, uint256 amount);
     event Claimed(address account, uint256 amount);
+    event PANPerBlockChanged(uint256 oldPANPerBlock, uint256 newPANPerBlock);
+    event OperatorChanged(address indexed oldOperator, address indexed newOperator);
 }

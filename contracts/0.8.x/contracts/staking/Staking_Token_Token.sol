@@ -196,8 +196,9 @@ contract StakingV2 is Ownable {
     /// @param _rewardPerSecond The amount of reward to be distributed per second.
     function setRewardPerSecond(uint256 _rewardPerSecond) internal {
         updatePool();
+        uint256 oldRewardPerSecond = rewardPerSecond; 
         rewardPerSecond = _rewardPerSecond;
-        emit LogRewardPerSecond(_rewardPerSecond);
+        emit RewardPerSecondChanged(oldRewardPerSecond, _rewardPerSecond);
     }
 
     function allocateMoreRewards(uint256 _addedReward, uint256 _days) external onlyReserveFund {
@@ -211,7 +212,7 @@ contract StakingV2 is Ownable {
             if (endRewardTime <  block.timestamp) {
                 endRewardTime =  block.timestamp + (_days * (1 days));
             } else {
-                endRewardTime = endRewardTime +  (_days * (1 days));
+                endRewardTime = endRewardTime + (_days * (1 days));
             }
         }
         reward.safeTransferFrom(msg.sender, address(this), _addedReward);
@@ -234,6 +235,6 @@ contract StakingV2 is Ownable {
     event EmergencyWithdraw(address indexed user, uint256 amount, address indexed to);
     event Harvest(address indexed user, uint256 amount);
     event LogUpdatePool(uint256 lastRewardTime, uint256 lpSupply, uint256 accRewardPerShare);
-    event LogRewardPerSecond(uint256 rewardPerSecond);
+    event RewardPerSecondChanged(uint256 oldRewardPerSecond, uint256 newRewardPerSecond);
     event FundRescued(address indexed receiver, uint256 amount);
 }

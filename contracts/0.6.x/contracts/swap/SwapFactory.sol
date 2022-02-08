@@ -14,6 +14,9 @@ contract SwapFactory is ISwapFactory {
     address[] public override allPairs;
 
     event PairCreated(address indexed token0, address indexed token1, address pair, uint256);
+    event FeeToChanged(address oldFeeTo, address newFeeTo);
+    event FeeToSetterChanged(address oldFeeToSetter, address newFeeToSetter);
+    event FeeToRateChanged(uint256 oldFeeToRate, uint256 newFeeToRate);
 
     constructor() public {
         feeToSetter = msg.sender;
@@ -46,17 +49,23 @@ contract SwapFactory is ISwapFactory {
 
     function setFeeTo(address _feeTo) external override {
         require(msg.sender == feeToSetter, 'SwapFactory: FORBIDDEN');
+        address oldFeeTo = feeTo;
         feeTo = _feeTo;
+        emit FeeToChanged(oldFeeTo, _feeTo);
     }
 
     function setFeeToSetter(address _feeToSetter) external override {
         require(msg.sender == feeToSetter, 'SwapFactory: FORBIDDEN');
+        address oldFeeToSetter = feeToSetter;
         feeToSetter = _feeToSetter;
+        emit FeeToSetterChanged(oldFeeToSetter, _feeToSetter);
     }
 
     function setFeeToRate(uint256 _rate) external override {
         require(msg.sender == feeToSetter, 'SwapFactory: FORBIDDEN');
         require(_rate > 0, 'SwapFactory: FEE_TO_RATE_OVERFLOW');
+        uint256 oldFeeToRate = feeToRate;
         feeToRate = _rate.sub(1);
-    }
+        emit FeeToRateChanged(oldFeeToRate, _rate);
+    } 
 }

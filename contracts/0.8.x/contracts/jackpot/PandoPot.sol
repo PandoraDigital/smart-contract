@@ -1,11 +1,11 @@
 //SPDX-License-Identifier: UNLICENSED
 pragma solidity =0.8.4;
+
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/interfaces/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
-
 
 import "../libraries/Random.sol";
 
@@ -94,8 +94,8 @@ contract PandoPot is Ownable, ReentrancyGuard, Pausable {
         pendingUSDT += _reward.usdt[0] + _reward.usdt[1];
         PSRForCurrentPot -= _reward.psr[0] + _reward.psr[1];
 
-        emit NewTicket(nTickets, _reward.owner, _reward.usdt, _reward.psr, _reward.expire);
         rewards[nTickets++] = _reward;
+        emit NewTicket(nTickets, _reward.owner, _reward.usdt, _reward.psr, _reward.expire);
     }
 
 
@@ -109,7 +109,7 @@ contract PandoPot is Ownable, ReentrancyGuard, Pausable {
             pendingUSDT -= _reward.usdt[i];
         }
         emit Claimed(_ticketId, _reward.owner, _reward.usdt, _reward.psr);
-    
+
     }
 
     function distribute(address[] memory _leaderboards, uint256[] memory ratios) external onlyWhitelist whenNotPaused {
@@ -162,6 +162,7 @@ contract PandoPot is Ownable, ReentrancyGuard, Pausable {
                 }
             }
         }
+        emit Liquidated(_ticketId);
     }
 
     function currentPot() external view returns(uint256, uint256) {
@@ -179,15 +180,19 @@ contract PandoPot is Ownable, ReentrancyGuard, Pausable {
 
     function toggleWhitelist(address _addr) external onlyOwner {
         whitelist[_addr] = !whitelist[_addr];
+        emit WhitelistChanged(_addr, whitelist[_addr]);
     }
 
     function allocatePSR(uint256 _amount) external onlyOwner {
         totalPSRAllocated += _amount;
         IERC20(PSR).safeTransferFrom(msg.sender, address(this), _amount);
+        emit PSRAllocated(_amount);
     }
 
-    function changeTimeBomb(uint256 _second) external onlyOwner{
+    function changeTimeBomb(uint256 _second) external onlyOwner {
+        uint256 oldSecond = timeBomb;
         timeBomb = _second;
+        emit TimeBombChanged(oldSecond, _second);
     }
 
     function pause() external onlyOwner {
@@ -205,9 +210,16 @@ contract PandoPot is Ownable, ReentrancyGuard, Pausable {
         uint256 _psrAmount = _psr.balanceOf(address(this));
         _usdt.safeTransfer(owner(), _usdtAmount);
         _psr.safeTransfer(owner(), _psrAmount);
+        emit EmergencyWithdraw(owner(), _usdtAmount, _psrAmount);
     }
+
     /*----------------------------EVENTS----------------------------*/
 
     event NewTicket(uint256 ticketId, address user, uint256[3] usdt, uint256[3] PSR, uint256 expire);
     event Claimed(uint256 ticketId, address user, uint256[3] usdt, uint256[3] PSR);
+    event Liquidated(uint256 ticketId);
+    event WhitelistChanged(address indexed whitelist, bool status);
+    event PSRAllocated(uint256 amount);
+    event TimeBombChanged(uint256 oldValueSecond, uint256 newValueSecond);
+    event EmergencyWithdraw(address owner, uint256 usdt, uint256 psr);
 }

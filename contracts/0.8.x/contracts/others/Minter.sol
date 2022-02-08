@@ -53,15 +53,31 @@ contract Minter is Ownable, ReentrancyGuard {
         PAN.safeTransfer(_to, _amount);
     }
 
-    function setOperator(address _operator, bool _status) external onlyOwner{
+    function setOperator(address _operator, bool _status) external onlyOwner {
         operators[_operator] = _status;
+        emit OperatorChanged(_operator, _status);
+    }
+
+    function setPANPerBlock(uint256 _PANPerBlock) external onlyOwner {
+        uint256 oldPANPerBlock = PANPerBlock;
+        PANPerBlock = _PANPerBlock;
+        emit PANPerBlockChanged(oldPANPerBlock, _PANPerBlock);
     }
 
     function changeDevFundPercent(uint256 _newPercent) external onlyOwner {
+        uint256 oldDevFundPercent = devFundPercent;
         devFundPercent = _newPercent;
+        emit DevFundPercentChanged(oldDevFundPercent, _newPercent);
     }
 
     function changeDevFund(address _newAddr) external onlyOwner {
+        address oldDevFund = devFund;
         devFund = _newAddr;
+        emit DevFundChanged(oldDevFund, _newAddr);
     }
+
+    event OperatorChanged(address indexed operator, bool status);
+    event PANPerBlockChanged(uint256 oldPANPerBlock, uint256 newPANPerBlock);
+    event DevFundPercentChanged(uint256 oldPercent, uint256 newPercent);
+    event DevFundChanged(address indexed oldDevFund, address indexed newDevFund);
 }

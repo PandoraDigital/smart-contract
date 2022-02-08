@@ -280,8 +280,9 @@ contract PandoAssembly is Ownable, IERC721Receiver {
     /// @notice Sets the reward per second to be distributed. Can only be called by the owner.
     /// @param _rewardPerSecond The amount of reward to be distributed per second.
     function setRewardPerSecond(uint256 _rewardPerSecond) internal {
+        uint256 oldRewardPerSecond = rewardPerSecond;
         rewardPerSecond = _rewardPerSecond;
-        emit LogRewardPerSecond(_rewardPerSecond);
+        emit RewardPerSecondChanged(oldRewardPerSecond, _rewardPerSecond);
     }
 
     function allocateMoreRewards(uint256 _addedReward, uint256 _days) external onlyReserveFund {
@@ -312,21 +313,29 @@ contract PandoAssembly is Ownable, IERC721Receiver {
     }
 
     function setPayment(address _paymentToken, uint256 _price, uint256 _coef) external onlyOwner {
+        address oldPaymentToken = paymentToken;
+        uint256 oldSlotBasePrice = slotBasePrice;
+        uint256 oldSlotCoefficient = slotCoefficient;
         paymentToken = _paymentToken;
         slotBasePrice = _price;
         slotCoefficient = _coef;
-        emit PaymentChanged(_paymentToken, _price, _coef);
+        emit PaymentTokenChanged(oldPaymentToken, _paymentToken);
+        emit SlotBasePrice(oldSlotBasePrice, _price);
+        emit SlotCoefficient(oldSlotCoefficient, _coef);
     }
 
     function changeDroidBotAddress(address _newAddr) external onlyOwner {
+        address oldDroidBot = address(droidBot);
         droidBot = IDroidBot(_newAddr);
-        emit DroidBotAddressChanged(_newAddr);
+        emit DroidBotChanged(oldDroidBot, _newAddr);
     }
 
     function setReceivingFund(address _addr) external onlyOwner {
+        address oldReceivingFund = receivingFund;
         receivingFund = _addr;
-        emit ReceivingFundChanged(_addr);
+        emit ReceivingFundChanged(oldReceivingFund, _addr);
     }
+
     /* =============== EVENTS ==================== */
 
     event Deposit(address indexed user, uint256[] nftId, uint256 amount, address indexed to);
@@ -334,9 +343,11 @@ contract PandoAssembly is Ownable, IERC721Receiver {
     event EmergencyWithdraw(address indexed user,  uint256[] nftId, uint256 amount, address indexed to);
     event Harvest(address indexed user, uint256 amount);
     event LogUpdatePool(uint256 lastRewardTime, uint256 lpSupply, uint256 accRewardPerShare);
-    event LogRewardPerSecond(uint256 rewardPerSecond);
+    event RewardPerSecondChanged(uint256 oldRewardPerSecond, uint256 newRewardPerSecond);
     event FundRescued(address indexed receiver, uint256 amount);
-    event DroidBotAddressChanged(address droiBotAddress);
-    event PaymentChanged(address token, uint256 price, uint256 coef);
-    event ReceivingFundChanged(address receivingFund);
+    event DroidBotChanged(address indexed oldDroiBot, address indexed newDroiBot);
+    event PaymentTokenChanged(address indexed oldToken, address indexed newToken);
+    event SlotBasePrice(uint256 oldPrice, uint256 newPrice);
+    event SlotCoefficient(uint256 oldCoef, uint256 newCoef);
+    event ReceivingFundChanged(address indexed oldReceivingFund, address indexed newReceivingFund);
 }

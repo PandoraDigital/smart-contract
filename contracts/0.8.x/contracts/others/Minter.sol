@@ -21,7 +21,7 @@ contract Minter is Ownable, ReentrancyGuard {
     IPAN public PAN;
     address public devFund;
     uint256 public devFundPercent = 1000;
-    uint256 public constant PRECISION = 10000;
+    uint256 public constant ONE_HUNDRED_PERCENT = 10000;
 
     modifier onlyOperators() {
         require(operators[msg.sender] == true, "Minter: caller is not the operators");
@@ -38,7 +38,7 @@ contract Minter is Ownable, ReentrancyGuard {
     function update() public {
         if (block.number > lastMinted) {
             uint256 _amount = (block.number - lastMinted) * PANPerBlock;
-            uint256 _toDev = _amount * devFundPercent / PRECISION;
+            uint256 _toDev = _amount * devFundPercent / ONE_HUNDRED_PERCENT;
             PAN.mint(address(this), _amount);
             PAN.safeTransfer(devFund, _toDev);
             lastMinted = block.number;

@@ -21,6 +21,7 @@ contract NFTRouter is Ownable {
     mapping (uint256 => uint256) private pandoBoxCreated;
 
     uint256 constant PRECISION = 10000000000;
+    uint256 constant ONE_HUNDRED_PERCENT = 10000;
     IDroidBot public droidBot;
     IPandoBox public pandoBox;
     IPandoPot public pandoPot;
@@ -35,7 +36,7 @@ contract NFTRouter is Ownable {
     uint256 public pandoBoxPerDay;
     uint256 public createPandoBoxFee;
     uint256 public upgradeBaseFee;
-    uint256 public PSRRatio = 80;
+    uint256 public PSRRatio = 8000;
     uint256 public slippage = 8000000000;
     address[] public PANToPSR;
 
@@ -117,7 +118,7 @@ contract NFTRouter is Ownable {
             if (createPandoBoxFee > 0) {
                 if (_option == 0) { // only PAN
                     PAN.safeTransferFrom(msg.sender, address(this), createPandoBoxFee);
-                    uint256 _amountSwap = createPandoBoxFee * (100 - PSRRatio) / 100;
+                    uint256 _amountSwap = createPandoBoxFee * (ONE_HUNDRED_PERCENT - PSRRatio) / ONE_HUNDRED_PERCENT;
                     uint256 _minAmount = _amountSwap * slippage / PRECISION;
                     IERC20(PAN).safeApprove(address(swapRouter), _amountSwap);
                     swapRouter.swapExactTokensForTokens(_amountSwap, _minAmount, PANToPSR, address(this), block.timestamp + 300);
@@ -127,8 +128,8 @@ contract NFTRouter is Ownable {
                     uint256 _price_PAN = PANOracle.consult();
                     uint256 _price_PSR = PSROracle.consult();
 
-                    uint256 _amount_PSR = createPandoBoxFee * (100 - PSRRatio) / 100 * _price_PAN / _price_PSR;
-                    ERC20Burnable(address(PAN)).burnFrom(msg.sender, createPandoBoxFee * PSRRatio / 100);
+                    uint256 _amount_PSR = createPandoBoxFee * (ONE_HUNDRED_PERCENT - PSRRatio) / ONE_HUNDRED_PERCENT * _price_PAN / _price_PSR;
+                    ERC20Burnable(address(PAN)).burnFrom(msg.sender, createPandoBoxFee * PSRRatio / ONE_HUNDRED_PERCENT);
                     ERC20Burnable(address(PSR)).burnFrom(msg.sender, _amount_PSR);
                 }
             }

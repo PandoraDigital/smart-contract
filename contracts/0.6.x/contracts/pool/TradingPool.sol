@@ -50,7 +50,7 @@ contract TradingPool is Ownable {
     address public swapRouter;
     uint256 public totalAllocPoint;
     uint256 public rewardPerBlock;
-    uint256 public rebaseDuration = 1200;
+    uint256 public rebaseDuration = 28800; // 1 days
     uint256 public rebaseSpeed = 9000;
     uint256 private constant MAX_REBASE = 20;
     uint256 private constant ONE_HUNDRED_PERCENT = 10000;

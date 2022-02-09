@@ -64,14 +64,16 @@ contract DroidBot is ERC721Burnable, Ownable {
 
     function addMinter(address _addMinter) external onlyOwner returns (bool) {
         require(_addMinter != address(0), "Token: _addMinter is the zero address");
-        emit MinterChanged(_addMinter, true);
-        return EnumerableSet.add(minters, _addMinter);
+        bool success = EnumerableSet.add(minters, _addMinter);
+        if (success) emit MinterChanged(_addMinter, true);
+        return success;
     }
 
     function delMinter(address _delMinter) external onlyOwner returns (bool) {
         require(_delMinter != address(0), "Token: _delMinter is the zero address");
-        emit MinterChanged(_delMinter, false);
-        return EnumerableSet.remove(minters, _delMinter);
+        bool success = EnumerableSet.remove(minters, _delMinter);
+        if (success) emit MinterChanged(_delMinter, false);
+        return success;
     }
 
     function getMinterLength() public view returns (uint256) {

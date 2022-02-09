@@ -23,7 +23,7 @@ contract MarketFeeCollector is Ownable {
     uint256 public rPool = 5000;
     uint256 public rPot = 2000;
     uint256 public rFund = 3000;
-    uint256 public constant PRECISION = 10000;
+    uint256 public constant ONE_HUNDRED_PERCENT = 10000;
 
     constructor (address _factory, address _usdt, address _pandoPool, address _pandoPot, address _operatingFund) {
         factory = IUniswapV2Factory(_factory);
@@ -61,9 +61,9 @@ contract MarketFeeCollector is Ownable {
     function distribute() external onlyOperator {
         uint256 amount = usdt.balanceOf(address(this));
         if (amount > 0) {
-            usdt.safeTransfer(pandoPool, amount * rPool / PRECISION);
-            usdt.safeTransfer(pandoPot, amount * rPot / PRECISION);
-            usdt.safeTransfer(operatingFund, amount * rFund / PRECISION);
+            usdt.safeTransfer(pandoPool, amount * rPool / ONE_HUNDRED_PERCENT);
+            usdt.safeTransfer(pandoPot, amount * rPot / ONE_HUNDRED_PERCENT);
+            usdt.safeTransfer(operatingFund, amount * rFund / ONE_HUNDRED_PERCENT);
         }
     }
 

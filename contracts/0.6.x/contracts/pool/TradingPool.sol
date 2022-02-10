@@ -38,7 +38,6 @@ contract TradingPool is Ownable {
     IMinter public minter;
     ISwapFactory public factory;
 
-
     mapping (address => PoolInfo) public poolInfo;
     mapping (address => address) public oracles;
 
@@ -64,13 +63,10 @@ contract TradingPool is Ownable {
     event LogPoolAddition(address pair, uint256 allocPoint);
     event LogSetPool(address pair, uint256 allocPoint);
     event RewardPerBlockChanged(uint256 oldRewardPerBlock, uint256 newRewardPerBlock);
-    event RebaseDurationChanged(uint256 oldRebaseDuration, uint256 newRebaseDuration);
     event RebaseSpeedChanged(uint256 oldRebaseSpeed, uint256 newRebaseSpeed);
     event FactoryChanged(address oldFactory, address newFactory);
     event SwapRouterChanged(address oldSwapRouter, address newSwapFactory);
     event MinterChanged(address oldMinter, address newMinter);
-    event LogRewardPerBlock(uint256 rewardPerBlock);
-
 
     constructor(address _minter, address _router, address _factory) public {
         minter = IMinter(_minter);
@@ -142,8 +138,9 @@ contract TradingPool is Ownable {
 
     function setRewardPerBlock(uint256 _rewardPerBlock, address[] calldata _pairs) public onlyOwner {
         massUpdatePools(_pairs);
+        uint256 oldRewardPerBlock = rewardPerBlock;
         rewardPerBlock = _rewardPerBlock;
-        emit LogRewardPerBlock(_rewardPerBlock);
+        emit RewardPerBlockChanged(oldRewardPerBlock, _rewardPerBlock);
     }
 
     function rebase(address _pair) public {
@@ -316,8 +313,6 @@ contract TradingPool is Ownable {
         }
         return false;
     }
-
-
 
     function harvest(address _pair, address _to) public {
         if (addedPairs[_pair]) {

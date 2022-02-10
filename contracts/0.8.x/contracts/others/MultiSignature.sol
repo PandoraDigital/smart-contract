@@ -110,17 +110,23 @@ contract MultiSignature{
 
     function addAdmin(address _newAdmin) external onlyWallet returns (bool) {
         require(_newAdmin != address(0), "MultiSign: _newAdmin is the zero address");
-        return EnumerableSet.add(admins, _newAdmin);
+        bool success = EnumerableSet.add(admins, _newAdmin);
+        if (success) emit AdminChanged(_newAdmin, true);
+        return success;
     }
 
     function delAdmin(address _delAdmin) external onlyWallet returns (bool) {
         require(_delAdmin != address(0), "MultiSign: _delAdmin is the zero address");
-        return EnumerableSet.remove(admins, _delAdmin);
+        bool success = EnumerableSet.remove(admins, _delAdmin);
+        if (success) emit AdminChanged(_delAdmin, false);
+        return success;
     }
 
-    function changeRequired(uint256 _newValue) external onlyWallet{
+    function changeRequired(uint256 _newValue) external onlyWallet {
         require(_newValue > 0, "MultiSign: required = 0");
+        uint256 oldValue = required;
         required = _newValue;
+        emit RequiredChanged(oldValue, _newValue);
     }
 
     /* ========== EVENTS ========== */
@@ -129,4 +135,6 @@ contract MultiSignature{
     event Voted(bytes32 indexed id, address target, uint256 value, bytes data);
     event Scheduled(bytes32 indexed id, address target, uint256 value, bytes data);
     event Revoked(bytes32 indexed id, address target, uint256 value, bytes data);
+    event RequiredChanged(uint256 oldRequired, uint256 newRequired);
+    event AdminChanged(address indexed admin, bool status);
 }

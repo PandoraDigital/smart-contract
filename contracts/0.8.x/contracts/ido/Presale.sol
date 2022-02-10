@@ -45,7 +45,7 @@ contract Presale is Ownable, Pausable, ReentrancyGuard {
     mapping(address => UserInfo) public userInfo;
     mapping(address => WaitingInfo) public waiting;
 
-    address[] public contributors;
+    address[] private contributors;
 
     // token erc20 info
     IERC20 public PandoraSpirit;
@@ -61,7 +61,7 @@ contract Presale is Ownable, Pausable, ReentrancyGuard {
 
     // sale setting
     uint256 public MAX_BUY_USDT = 1000 ether;
-    uint256 public MIM_BUY_USDT = 0;
+    uint256 public MIN_BUY_USDT = 0;
     uint256 public MAX_BUY_PSR = 1000 ether;
     uint256 public totalTokensSale;
     uint256 public remain;
@@ -85,7 +85,7 @@ contract Presale is Ownable, Pausable, ReentrancyGuard {
     modifier allowBuy(address _currency, uint256 _amount) {
         require(block.timestamp >= startSale && block.timestamp <= startSale + duration, "Token not in sale");
         require(_currency == address(USDT) || _currency == address(BUSD), "Currency not allowed");
-        require(_amount >= MIM_BUY_USDT, "purchase amount needs to be greater than MIM_BUY_USDT");
+        require(_amount >= MIN_BUY_USDT, "purchase amount needs to be greater than MIM_BUY_USDT");
         _;
     }
 
@@ -265,13 +265,6 @@ contract Presale is Ownable, Pausable, ReentrancyGuard {
         totalTokensSale = _getAmountToken(MAX_BUY_USDT * whiteListSlots);
         remain = totalTokensSale;
         PandoraSpirit.safeTransferFrom(msg.sender, address(this), totalTokensSale);
-    }
-
-    function setOperator(address _newOperator) public onlyOwner {
-        require(_newOperator != address(0), "Operator must be different address 0");
-        address oldOperator = operator;
-        operator = _newOperator;
-        emit OperatorChanged(oldOperator, _newOperator);
     }
 
     function addWhiteList(address[] memory _whiteList) external onlyOperator {
@@ -499,7 +492,15 @@ contract Presale is Ownable, Pausable, ReentrancyGuard {
     }
 
     function setMinBuy(uint256 _value) public onlyOwner {
-        MIM_BUY_USDT = _value;
+        require(_value <= MAX_BUY_USDT, "_value can not be greater than MAX_BUY_USDT");
+        MIN_BUY_USDT = _value;
+    }
+
+    function setOperator(address _newOperator) public onlyOwner {
+        require(_newOperator != address(0), "Operator must be different address 0");
+        address oldOperator = operator;
+        operator = _newOperator;
+        emit OperatorChanged(oldOperator, _newOperator);
     }
 
     // ================= Testing ================= //

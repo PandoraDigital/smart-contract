@@ -110,8 +110,15 @@ A next-gen community-owned DeFi, NFT and Gamification protocol.
 
 # Private Sale:
 ## 26. Lock:
-- Description: Contract for private sale.
+- Description: Contract is used for private sale.
 - File path: contracts\0.8.x\contracts\others\Lock.sol
 
+# PSR IDO:
+## 27. Presale:
+- Description: Contract is used for PSR token public sale: register, commit and claim at TGE.
+- File path: contracts\0.8.x\contracts\ido\Presale.sol
 
+## 28. Verifier:
+- Description: Contract is used for verifying user when claim PSR token.
+- File path: contracts\0.8.x\contracts\ido\Verifier.sol
 

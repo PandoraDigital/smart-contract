@@ -119,7 +119,8 @@ contract NFTRouter is Ownable {
                 if (_option == 0) { // only PAN
                     PAN.safeTransferFrom(msg.sender, address(this), createPandoBoxFee);
                     uint256 _amountSwap = createPandoBoxFee * (ONE_HUNDRED_PERCENT - PSRRatio) / ONE_HUNDRED_PERCENT;
-                    uint256 _minAmount = _amountSwap * slippage / PRECISION;
+                    uint256[] memory _amounts = swapRouter.getAmountsOut(_amountSwap, PANToPSR);
+                    uint256 _minAmount = _amounts[_amounts.length - 1] * slippage / PRECISION;
                     IERC20(PAN).safeApprove(address(swapRouter), _amountSwap);
                     swapRouter.swapExactTokensForTokens(_amountSwap, _minAmount, PANToPSR, address(this), block.timestamp + 300);
                     ERC20Burnable(address(PAN)).burn(PAN.balanceOf(address(this)));

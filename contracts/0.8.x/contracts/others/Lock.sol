@@ -48,6 +48,9 @@ contract Lock is Ownable, Pausable, ReentrancyGuard {
     }
 
     function pending(address _account) public view returns(uint256 _pending) {
+        if (block.timestamp < startLock) {
+            return 0;
+        }
         LockedData memory _data = data[_account];
         uint256 _totalLockRemain =  _data.total - _data.unlockedAmounts - _data.pending;
         if (_totalLockRemain > 0) {
@@ -92,6 +95,7 @@ contract Lock is Ownable, Pausable, ReentrancyGuard {
         startLock = _value;
         emit StartLockChanged(oldStartLock, _value);
     }
+
     function setUnlockDuration(uint256 _newValue) external onlyOwner {
         uint256 oldUnlockDuration = unlockDuration;
         unlockDuration = _newValue;

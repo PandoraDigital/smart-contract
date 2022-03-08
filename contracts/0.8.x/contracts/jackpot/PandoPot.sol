@@ -29,8 +29,8 @@ contract PandoPot is Ownable, ReentrancyGuard, Pausable {
     uint256 public constant unlockPeriod = 2 * 365 * 1 days;
     uint256 public timeBomb = 2 * 30 * 1 days;
     uint256 public rewardExpireTime = 14 * 1 days;
-    uint256 public megaPrizePercentage = 25;
-    uint256 public minorPrizePercentage = 1;
+    uint256 public constant megaPrizePercentage = 25;
+    uint256 public constant minorPrizePercentage = 1;
     uint256 public lastDistribute;
     uint256 public usdtForCurrentPot;
     uint256 public PSRForCurrentPot;
@@ -213,6 +213,12 @@ contract PandoPot is Ownable, ReentrancyGuard, Pausable {
         emit EmergencyWithdraw(owner(), _usdtAmount, _psrAmount);
     }
 
+    function changeRewardExpireTime(uint256 _newExpireTime) external onlyOwner whenPaused {
+        uint256 _oldExpireTIme = rewardExpireTime;
+        rewardExpireTime = _newExpireTime;
+        emit RewardExpireTimeChanged(_oldExpireTIme, _newExpireTime);
+    }
+
     /*----------------------------EVENTS----------------------------*/
 
     event NewTicket(uint256 ticketId, address user, uint256[3] usdt, uint256[3] PSR, uint256 expire);
@@ -222,4 +228,5 @@ contract PandoPot is Ownable, ReentrancyGuard, Pausable {
     event PSRAllocated(uint256 amount);
     event TimeBombChanged(uint256 oldValueSecond, uint256 newValueSecond);
     event EmergencyWithdraw(address owner, uint256 usdt, uint256 psr);
+    event RewardExpireTimeChanged(uint256 oldExpireTime, uint256 newExpireTime);
 }

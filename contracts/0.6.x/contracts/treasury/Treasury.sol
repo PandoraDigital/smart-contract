@@ -25,7 +25,7 @@ contract Treasury is Ownable {
     uint256 public pandoPoolPercent = 7000;
     uint256 public pandoPotPercent = 2000;
 
-    uint256 public constant PRECISION = 10000;
+    uint256 public constant ONE_HUNDRED_PERCENT = 10000;
 
     mapping(address => address) internal _bridges;
     mapping(address => bool) public operators;
@@ -265,9 +265,9 @@ contract Treasury is Ownable {
 
     function distribute() external onlyOperator {
         uint256 _amount = IERC20(usdt).balanceOf(address(this));
-        IERC20(usdt).safeTransfer(team, _amount * teamPercent / PRECISION);
-        IERC20(usdt).safeTransfer(pandoPot, _amount * pandoPotPercent / PRECISION);
-        IERC20(usdt).safeTransfer(pandoPool, _amount * pandoPoolPercent / PRECISION);
+        IERC20(usdt).safeTransfer(team, _amount * teamPercent / ONE_HUNDRED_PERCENT);
+        IERC20(usdt).safeTransfer(pandoPot, _amount * pandoPotPercent / ONE_HUNDRED_PERCENT);
+        IERC20(usdt).safeTransfer(pandoPool, _amount * pandoPoolPercent / ONE_HUNDRED_PERCENT);
     }
 
     function changeTargetAddress(address _team, address _pandoPool, address _pandoPot) external onlyOwner {
@@ -292,10 +292,23 @@ contract Treasury is Ownable {
         factory = IUniswapV2Factory(_factory);
         emit FactoryChanged(oldFactory, _factory);
     }
+    
+    function settingDistributePercent(uint256 _teamPercent, uint256 _pandoPoolPercent, uint256 _pandoPotPercent) external onlyOwner {
+        require(_teamPercent + _pandoPoolPercent + pandoPotPercent = ONE_HUNDRED_PERCENT, 'Treasury : != 100%');
+        uint256 _oldTeamPercent = teamPercent;
+        uint256 _oldPandoPoolPercent = pandoPoolPercent;
+        uint256 _oldPandoPotPercent = pandoPotPercent;
+        teamPercent = _teamPercent;
+        pandoPotPercent = _pandoPotPercent;
+        pandoPoolPercent = _pandoPoolPercent;
+        emit DistributePercentChanged(_oldTeamPercent, _oldPandoPoolPercent, _oldPandoPotPercent, teamPercent, pandoPoolPercent, pandoPotPercent);
+    }
+
     event Distrubuted(uint256 amount);
     event TeamChanged(address oldTeam, address newTeam);
     event PandoPoolChanged(address oldPandoPool, address newPandoPool);
     event JackpotChanged(address oldJackpot, address newJackpot);
     event OperatorChanged(address operator, bool status);
     event FactoryChanged(address oldFactory, address newFactory);
+    event DistributePercentChanged(uint256 oldTeamPercent, uint256 oldPandoPoolPercent, uint256 oldPandoPotPercent, uint256 newTeamPercent, uint256 newPandoPoolPercent, uint256 newPandoPotPercent);
 }

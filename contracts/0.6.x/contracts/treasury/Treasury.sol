@@ -294,7 +294,7 @@ contract Treasury is Ownable {
     }
     
     function settingDistributePercent(uint256 _teamPercent, uint256 _pandoPoolPercent, uint256 _pandoPotPercent) external onlyOwner {
-        require(_teamPercent + _pandoPoolPercent + pandoPotPercent = ONE_HUNDRED_PERCENT, 'Treasury : != 100%');
+        require(_teamPercent + _pandoPoolPercent + _pandoPotPercent == ONE_HUNDRED_PERCENT, 'Treasury : != 100%');
         uint256 _oldTeamPercent = teamPercent;
         uint256 _oldPandoPoolPercent = pandoPoolPercent;
         uint256 _oldPandoPotPercent = pandoPotPercent;

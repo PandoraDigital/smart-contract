@@ -34,10 +34,17 @@ contract PANOracle is Operator, IOracle {
     }
 
     function setOracleBusdUsd(address _oracleBusdUsd) external onlyOperator {
+        address old = oracleBusdUsd;
         oracleBusdUsd = _oracleBusdUsd;
+        emit OracleBusdUsdChanged(old, _oracleBusdUsd);
     }
 
     function setOraclePANBusd(address _oraclePANBusd) external onlyOperator {
+        address old = oraclePANBusd;
         oraclePANBusd = _oraclePANBusd;
+        emit OraclePANBusdChanged(old, _oraclePANBusd);
     }
+
+    event OracleBusdUsdChanged(address indexed oldOracle, address indexed newOracle);
+    event OraclePANBusdChanged(address indexed oldOracle, address indexed newOracle);
 }

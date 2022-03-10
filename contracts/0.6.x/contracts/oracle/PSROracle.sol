@@ -34,10 +34,17 @@ contract PSROracle is Operator, IOracle {
     }
 
     function setOracleBusdUsd(address _oracleBusdUsd) external onlyOperator {
+        address old = oracleBusdUsd;
         oracleBusdUsd = _oracleBusdUsd;
+        emit OracleBusdUsdChanged(old, _oracleBusdUsd);
     }
 
     function setOraclePSRBusd(address _oraclePSRBusd) external onlyOperator {
+        address old = oraclePSRBusd;
         oraclePSRBusd = _oraclePSRBusd;
+        emit OraclePSRBusdChanged(old, _oraclePSRBusd);
     }
+
+    event OracleBusdUsdChanged(address indexed oldOracle, address indexed newOracle);
+    event OraclePSRBusdChanged(address indexed oldOracle, address indexed newOracle);
 }

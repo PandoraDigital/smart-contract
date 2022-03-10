@@ -64,9 +64,10 @@ contract TradingPool is Ownable {
     event LogSetPool(address pair, uint256 allocPoint);
     event RewardPerBlockChanged(uint256 oldRewardPerBlock, uint256 newRewardPerBlock);
     event RebaseSpeedChanged(uint256 oldRebaseSpeed, uint256 newRebaseSpeed);
-    event FactoryChanged(address oldFactory, address newFactory);
-    event SwapRouterChanged(address oldSwapRouter, address newSwapFactory);
-    event MinterChanged(address oldMinter, address newMinter);
+    event FactoryChanged(address indexed oldFactory, address indexed newFactory);
+    event SwapRouterChanged(address indexed oldSwapRouter, address indexed newSwapFactory);
+    event MinterChanged(address indexed oldMinter, address indexed newMinter);
+    event OracleChanged(address indexed token, address indexed oldOracle, address indexed newOracle);
 
     constructor(address _minter, address _router, address _factory) public {
         minter = IMinter(_minter);
@@ -120,7 +121,9 @@ contract TradingPool is Ownable {
     }
 
     function setOracle(address _token, address _oracle) public onlyOwner {
+        address _oldOracle = oracles[_token];
         oracles[_token] = _oracle;
+        emit OracleChanged(_token, _oldOracle, _oracle);
     }
 
     function set(address _pair, uint256 _allocPoint) public onlyOwner {

@@ -170,7 +170,9 @@ contract StakingV1 is Ownable {
     }
 
     function changeMinter(address _newMinter) external onlyOwner {
+        address oldMinter = address(minter);
         minter = IMinter(_newMinter);
+        emit MinterChanged(oldMinter, _newMinter);
     }
 
     /* =============== EVENTS ==================== */
@@ -182,4 +184,5 @@ contract StakingV1 is Ownable {
     event LogUpdatePool(uint256 lastRewardBlock, uint256 lpSupply, uint256 accRewardPerShare);
     event RewardPerBlockChanged(uint256 oldRewardPerBlock, uint256 newRewardPerBlock);
     event FundRescued(address indexed receiver, uint256 amount);
+    event MinterChanged(address indexed oldMinter, address indexed newMinter);
 }

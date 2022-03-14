@@ -11,8 +11,7 @@ import "../libraries/NFTLib.sol";
 import "../interfaces/IDataStorage.sol";
 
 contract PandoBox is ERC721Burnable, Ownable {
-    using EnumerableSet for EnumerableSet.AddressSet;
-    EnumerableSet.AddressSet private minters;
+    address public minter;
     uint256 public totalSupply;
     mapping (uint256 => NFTLib.Info) public nftInfo;
     string baseURI;
@@ -49,42 +48,19 @@ contract PandoBox is ERC721Burnable, Ownable {
 
     /*----------------------------RESTRICT FUNCTIONS----------------------------*/
 
-    function addMinter(address _addMinter) external onlyOwner returns (bool) {
-        require(_addMinter != address(0), "Token: _addMinter is the zero address");
-        bool success = EnumerableSet.add(minters, _addMinter);
-        if (success) emit MinterChanged(_addMinter, true);
-        return success;
+    function changeMinter(address _newMinter) external onlyOwner {
+        address _oldMinter = minter;
+        minter = _newMinter;
+        emit MinterChanged(_oldMinter, _newMinter);
     }
 
-    function delMinter(address _delMinter) external onlyOwner returns (bool) {
-        require(_delMinter != address(0), "Token: _delMinter is the zero address");
-        bool success = EnumerableSet.remove(minters, _delMinter);
-        if (success) emit MinterChanged(_delMinter, false);
-        return success;
-    }
-
-    function getMinterLength() public view returns (uint256) {
-        return EnumerableSet.length(minters);
-    }
-
-    function isMinter(address account) public view returns (bool) {
-        return EnumerableSet.contains(minters, account);
-    }
-
-    function getMinter(uint256 _index) external view onlyOwner returns (address) {
-        require(_index <= getMinterLength() - 1, "Token: index out of bounds");
-        return EnumerableSet.at(minters, _index);
-    }
-
-
-    // modifier for mint function
     modifier onlyMinter() {
-        require(isMinter(msg.sender), "caller is not the minter");
+        require(msg.sender == minter, "PandoBox: caller is not the minter");
         _;
     }
 
     /*----------------------------EVENTS----------------------------*/
 
     event PandoBoxCreated(address indexed receiver,uint256 indexed id, uint256 level);
-    event MinterChanged(address indexed minter, bool status);
+    event MinterChanged(address indexed oldMinter, address indexed newMinter);
 }

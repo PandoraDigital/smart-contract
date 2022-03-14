@@ -94,8 +94,10 @@ contract PandoPot is Ownable, ReentrancyGuard, Pausable {
         pendingUSDT += _reward.usdt[0] + _reward.usdt[1];
         PSRForCurrentPot -= _reward.psr[0] + _reward.psr[1];
 
-        rewards[nTickets++] = _reward;
-        emit NewTicket(nTickets, _reward.owner, _reward.usdt, _reward.psr, _reward.expire);
+        uint256 _ticketId = nTickets;
+        rewards[_ticketId] = _reward;
+        nTickets++;
+        emit NewTicket(_ticketId, _reward.owner, _reward.usdt, _reward.psr, _reward.expire);
     }
 
 

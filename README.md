@@ -1,6 +1,10 @@
 # 🤖Pandora Digital:
 A next-gen community-owned DeFi, NFT and Gamification protocol.
 
+[![audit-by-peckshield](https://user-images.githubusercontent.com/96759127/166666879-ce15cc28-4ffd-4454-aa7f-be48d0e8fac5.png)](https://github.com/peckshield/publications/blob/master/audit_reports/PeckShield-Audit-Report-Pandora-v1.0.pdf)
+
+
+
 # Tokens:
 
 ## 1. PandoraSpirit:

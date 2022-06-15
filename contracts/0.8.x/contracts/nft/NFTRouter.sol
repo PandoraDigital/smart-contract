@@ -61,13 +61,19 @@ contract NFTRouter is Ownable {
     uint256 public pandoBoxPerDay;
     uint256 public createPandoBoxFee;
     uint256 public upgradeBaseFee;
-    uint256 public nRequest;
+    uint256 public nRequest = 9000;
     uint256 public PSRRatio = 8000;
     uint256 public slippage = 8000;
     uint256 public blockConfirmations = 3;
 
     modifier onlyUserLevel() {
         require(msg.sender == address(userLevel), "NFTRouter: only user level");
+        _;
+    }
+
+    modifier onlyEOA() {
+        // Try to make flash-loan exploit harder to do by only allowing externally owned addresses.
+        require(msg.sender == tx.origin, "Treasury: must use EOA");
         _;
     }
     /*----------------------------INITIALIZE----------------------------*/
@@ -176,12 +182,12 @@ contract NFTRouter is Ownable {
         nRequest++;
         uint256 _requestId = nRequest;
         requests[_requestId] = Request({
-            id : _requestId,
-            createdAt : block.number,
-            seed : _computerSeed() % PRECISION + 1,
-            data : _data,
-            rType : _type,
-            status : RequestStatus.AVAILABLE
+        id : _requestId,
+        createdAt : block.number,
+        seed : _computerSeed() % PRECISION + 1,
+        data : _data,
+        rType : _type,
+        status : RequestStatus.AVAILABLE
         });
         EnumerableSet.UintSet storage _userRequest = userRequests[_user];
         _userRequest.add(_requestId);
@@ -251,7 +257,7 @@ contract NFTRouter is Ownable {
 
     /*----------------------------EXTERNAL FUNCTIONS----------------------------*/
 
-    function createPandoBox(uint256 _option) external {
+    function createPandoBox(uint256 _option) external onlyEOA {
         require(block.timestamp >= startTime, 'Router: not started');
         uint256 _ndays = (block.timestamp - startTime) / 1 days;
         uint256 _createPandoBoxFee = createPandoBoxFee - _getBonus(createPandoBoxFee);
@@ -282,7 +288,7 @@ contract NFTRouter is Ownable {
         }
     }
 
-    function createDroidBot(uint256 _pandoBoxId) external {
+    function createDroidBot(uint256 _pandoBoxId) external onlyEOA {
         if (pandoBox.ownerOf(_pandoBoxId) == msg.sender) {
             pandoBox.burn(_pandoBoxId);
             NFTLib.Info memory _info = pandoBox.info(_pandoBoxId);
@@ -294,7 +300,7 @@ contract NFTRouter is Ownable {
         }
     }
 
-    function upgradeDroidBot(uint256 _droidBot0Id, uint256 _droidBot1Id) external {
+    function upgradeDroidBot(uint256 _droidBot0Id, uint256 _droidBot1Id) external onlyEOA {
         require(droidBot.ownerOf(_droidBot0Id) == msg.sender && droidBot.ownerOf(_droidBot1Id) == msg.sender, 'NFTRouter : not owner of bot');
         uint256 _l0 = droidBot.level(_droidBot0Id);
         uint256 _l1 = droidBot.level(_droidBot1Id);
@@ -322,7 +328,7 @@ contract NFTRouter is Ownable {
         _createRequest(RequestType.UPGRADE, _data, msg.sender);
     }
 
-    function createAvatar(uint256 _lv, address _user) external onlyUserLevel {
+    function createAvatar(uint256 _lv, address _user) external onlyUserLevel onlyEOA {
         uint256[] memory _data = new uint[](1);
         _data[0] = _lv;
         _createRequest(RequestType.AVATAR, _data, _user);
@@ -345,7 +351,7 @@ contract NFTRouter is Ownable {
         return requests[_id];
     }
 
-    function processRequest(uint256 _id, uint256 _blockNum, bytes32 _blockHash, bytes memory _signature) external {
+    function processRequest(uint256 _id, uint256 _blockNum, bytes32 _blockHash, bytes memory _signature) external onlyEOA {
         // latest
         EnumerableSet.UintSet storage _userRequest = userRequests[msg.sender];
         require(_userRequest.length() > 0, 'NFTRouter: empty request');
@@ -353,9 +359,11 @@ contract NFTRouter is Ownable {
         if (_id == 0) {
             _id = _userRequest.at(_userRequest.length() - 1);
             require(requests[_id].createdAt + 256 + blockConfirmations > block.number, 'NFTRouter: >256 blocks');
+            require(requests[_id].createdAt + blockConfirmations + 1 < block.number, 'NFTRouter: !sync');
             _hash = blockhash(requests[_id].createdAt + blockConfirmations);
         } else {
             require(_userRequest.contains(_id), 'NFTRouter: !exist request');
+            require(requests[_id].createdAt + blockConfirmations + 1 < block.number, 'NFTRouter: !sync');
             if (requests[_id].createdAt + 256 + blockConfirmations <= block.number) {
                 _hash = keccak256(abi.encodePacked(address(this), _blockNum, _blockHash)).toEthSignedMessageHash();
                 address _signer = _hash.recover(_signature);
@@ -366,6 +374,7 @@ contract NFTRouter is Ownable {
             }
         }
         _userRequest.remove(_id);
+        require(uint256(_hash) != 0, 'NFTRouter: hashInvalid');
         _executeRequest(_id, _hash, msg.sender);
     }
 

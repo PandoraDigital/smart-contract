@@ -8,12 +8,14 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-contract NftMarket is Ownable, Pausable, ReentrancyGuard {
+contract MarketPlaceV2 is Ownable, Pausable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     uint256 constant public ONE_HUNDRED_PERCENT = 10000; // 100%
 
     uint256 constant public MIN_PRICE = 1000000000;
+    //must change when upgrade new contract version
+    uint256 constant public ID_VERSION = 20000000000;
 
     event SystemFeePercentUpdated(uint256 percent);
     event AdminWalletUpdated(address wallet);
@@ -79,11 +81,13 @@ contract NftMarket is Ownable, Pausable, ReentrancyGuard {
         for (uint i = 0; i < erc20s.length; i++) {
             erc20Whitelist[erc20s[i]] = true;
         }
+        totalAsks = ID_VERSION;
+        totalBids = ID_VERSION;
     }
 
     function setSystemFeePercent(uint256 percent)
-        public
-        onlyOwner
+    public
+    onlyOwner
     {
         require(percent <= ONE_HUNDRED_PERCENT, "NftMarket: percent is invalid");
 
@@ -93,8 +97,8 @@ contract NftMarket is Ownable, Pausable, ReentrancyGuard {
     }
 
     function setAdminWallet(address wallet)
-        public
-        onlyOwner
+    public
+    onlyOwner
     {
         require(wallet != address(0), "NftMarket: address is invalid");
 
@@ -104,8 +108,8 @@ contract NftMarket is Ownable, Pausable, ReentrancyGuard {
     }
 
     function updateErc20Whitelist(address[] memory erc20s, bool status)
-        public
-        onlyOwner
+    public
+    onlyOwner
     {
         uint256 length = erc20s.length;
 
@@ -119,8 +123,8 @@ contract NftMarket is Ownable, Pausable, ReentrancyGuard {
     }
 
     function updateErc721Whitelist(address[] memory erc721s, bool status)
-        public
-        onlyOwner
+    public
+    onlyOwner
     {
         uint256 length = erc721s.length;
 
@@ -134,25 +138,25 @@ contract NftMarket is Ownable, Pausable, ReentrancyGuard {
     }
 
     function pause()
-        public
-        onlyOwner
+    public
+    onlyOwner
     {
         _pause();
     }
 
     function unpause()
-        public
-        onlyOwner
+    public
+    onlyOwner
     {
         _unpause();
     }
 
     function setSalePrice(address erc721, address erc20, uint256 tokenId, uint256 price)
-        public
-        whenNotPaused
-        nonReentrant
-        inWhitelist(erc721, erc20)
-        returns (uint256) 
+    public
+    whenNotPaused
+    nonReentrant
+    inWhitelist(erc721, erc20)
+    returns (uint256)
     {
         address msgSender = _msgSender();
 
@@ -187,8 +191,8 @@ contract NftMarket is Ownable, Pausable, ReentrancyGuard {
     }
 
     function cancelSalePrice(address erc721, uint256 tokenId)
-        public
-        nonReentrant
+    public
+    nonReentrant
     {
         address msgSender = _msgSender();
 
@@ -207,11 +211,11 @@ contract NftMarket is Ownable, Pausable, ReentrancyGuard {
     }
 
     function bid(address erc721, address erc20, uint256 tokenId, uint256 price, uint256 oldBid)
-        public
-        whenNotPaused
-        nonReentrant
-        inWhitelist(erc721, erc20)
-        returns (uint256)
+    public
+    whenNotPaused
+    nonReentrant
+    inWhitelist(erc721, erc20)
+    returns (uint256)
     {
         require(price >= MIN_PRICE, "NftMarket: price is invalid");
 
@@ -237,8 +241,8 @@ contract NftMarket is Ownable, Pausable, ReentrancyGuard {
     }
 
     function cancelBid(address erc721, uint256 tokenId, uint256 bidId)
-        public
-        nonReentrant
+    public
+    nonReentrant
     {
         uint256 askId = currentAsks[erc721][tokenId];
 
@@ -248,7 +252,7 @@ contract NftMarket is Ownable, Pausable, ReentrancyGuard {
     }
 
     function _cancelBid(address erc721, uint256 tokenId, address bidder, uint256 askId, uint256 bidId)
-        internal
+    internal
     {
         Bid memory info = bids[erc721][tokenId][askId][bidId];
 
@@ -260,9 +264,9 @@ contract NftMarket is Ownable, Pausable, ReentrancyGuard {
     }
 
     function acceptBid(address erc721, uint256 tokenId, uint256 bidId)
-        public
-        whenNotPaused
-        nonReentrant
+    public
+    whenNotPaused
+    nonReentrant
     {
         address msgSender = _msgSender();
 
@@ -285,10 +289,10 @@ contract NftMarket is Ownable, Pausable, ReentrancyGuard {
         delete currentAsks[erc721][tokenId];
     }
 
-    function buy(address erc721, uint256 tokenId)
-        public
-        whenNotPaused
-        nonReentrant
+    function buy(address erc721, uint256 tokenId, uint256 amount)
+    public
+    whenNotPaused
+    nonReentrant
     {
         address msgSender = _msgSender();
 
@@ -297,6 +301,7 @@ contract NftMarket is Ownable, Pausable, ReentrancyGuard {
         Ask memory info = asks[erc721][tokenId][askId];
 
         require(info.price > 0, "NftMarket: token price at 0 are not for sale");
+        require(info.price == amount, "NftMarket: amount not match price");
 
         _payout(erc721, info.erc20, tokenId, info.price, msgSender, info.seller);
 
@@ -309,7 +314,7 @@ contract NftMarket is Ownable, Pausable, ReentrancyGuard {
     }
 
     function _payout(address erc721, address erc20, uint256 tokenId, uint256 price, address buyer, address seller)
-        internal
+    internal
     {
         uint systemFeePayment = _calculateSystemFee(price, systemFeePercent);
 
@@ -327,9 +332,9 @@ contract NftMarket is Ownable, Pausable, ReentrancyGuard {
     }
 
     function _calculateSystemFee(uint256 price, uint256 feePercent)
-        internal
-        pure
-        returns (uint256)
+    internal
+    pure
+    returns (uint256)
     {
         return price * feePercent / ONE_HUNDRED_PERCENT;
     }

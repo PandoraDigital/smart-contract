@@ -7,8 +7,8 @@ import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
-import "./interfaces/IBondNFT.sol";
-import "../interfaces/IUserLevel.sol";
+import "../IBondNFT.sol";
+import "../../../interfaces/IUserLevel.sol";
 
 
 contract BondStaking is Ownable, IERC721Receiver, Pausable {

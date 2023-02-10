@@ -76,6 +76,7 @@ contract BondRouter is Ownable, BondStruct, Pausable, ReentrancyGuard {
         require(_adminWallet != address(0), "BondRouter: admin wallet not a zero");
         factory = _nftFactory;
         operators.add(_adminWallet);
+        operators.add(msg.sender);
         adminWallet = _adminWallet;
         refundAddress = _refundAddress;
     }
@@ -130,6 +131,12 @@ contract BondRouter is Ownable, BondStruct, Pausable, ReentrancyGuard {
 
     function _updateLastHarvest(IBondNFT _bond, uint256[] memory ids) internal {
         _bond.updateLastHarvest(ids, msg.sender);
+    }
+
+    function _updateLastHarvest(uint256 _id) internal {
+        uint256[] memory _updateId = new uint256[](1);
+        _updateId[0] = _id;
+        _updateLastHarvest(bondNFTAddress, _updateId);
     }
 
     function _executeRequest(uint256 _requestId) internal {
@@ -194,13 +201,13 @@ contract BondRouter is Ownable, BondStruct, Pausable, ReentrancyGuard {
             (uint256 _interestAmount, uint256 _totalAmount, uint256 _amountBack) = _calAmount(_ids[i], _batchId, _info.config.startTime);
             _amountSent += (_totalAmount + _interestAmount);
             _amountRefund += _amountBack;
+            _updateLastHarvest(_ids[i]);
             emit RedeemInfo(_ids[i], _amountBack, _interestAmount, _totalAmount);
         }
         if (_amountRefund > 0) {
             _info.raised -= _amountRefund;
         }
 
-        _updateLastHarvest(bondNFTAddress, _ids);
         _lock(bondNFTAddress, _ids);
         _createPendingRequest(RequestType.REDEEM, _to, _amountSent, _ids, _batchId);
 
@@ -218,10 +225,10 @@ contract BondRouter is Ownable, BondStruct, Pausable, ReentrancyGuard {
         for (uint256 i = 0; i < _ids.length; i++) {
             (uint256 _interestAmount,,) = _calAmount(_ids[i], _batchId, _info.startTime);
             _amountSent += _interestAmount;
+            _updateLastHarvest(_ids[i]);
         }
         //        _createPendingRequest(RequestType.HARVEST, _to, _amountSent, _ids, _batchId);
         _payment(_info.currency, msg.sender, _amountSent);
-        _updateLastHarvest(bondNFTAddress, _ids);
 
         emit Harvest(msg.sender, _ids, _to, _amountSent, _batchId);
     }
@@ -309,12 +316,16 @@ contract BondRouter is Ownable, BondStruct, Pausable, ReentrancyGuard {
         return _calCurrentRate(_start, _end, _rate);
     }
 
+    function getOperators() external view returns(address[] memory) {
+        return operators.values();
+    }
+
     /* ===================== Restrict Access ===================== */
-//    function createBondNFT(string memory _name, string memory _symbol, string memory _uri) external onlyOwner {
-//        require(address(bondNFTAddress) == address(0), "BondRouter: created");
-//        bondNFTAddress = IBondNFT(IFactory(factory).createBondNFT(address(this), _name, _symbol, _uri));
-//        emit CreateBondNFTAddress(address(bondNFTAddress));
-//    }
+    //    function createBondNFT(string memory _name, string memory _symbol, string memory _uri) external onlyOwner {
+    //        require(address(bondNFTAddress) == address(0), "BondRouter: created");
+    //        bondNFTAddress = IBondNFT(IFactory(factory).createBondNFT(address(this), _name, _symbol, _uri));
+    //        emit CreateBondNFTAddress(address(bondNFTAddress));
+    //    }
 
 
     function createBatch(BatchConfig memory _config, BackedBond[] memory _backedBond, uint256[] memory _prices, InterestRate[] memory _rates, bool _active)
@@ -322,6 +333,46 @@ contract BondRouter is Ownable, BondStruct, Pausable, ReentrancyGuard {
         batchId ++;
         require(_config.startTime > block.timestamp, "BondRouter: start time < now");
         require(_config.maturity > _config.startTime, "BondRouter: maturity < start time");
+        require(_prices.length == _rates.length, "BondRouter: !length");
+        batchInfo[batchId].config = _config;
+        for (uint256 i = 0; i < _backedBond.length; i++) {
+            batchInfo[batchId].backedBond.push(_backedBond[i]);
+        }
+
+        //default
+        if (_prices.length > 0) {
+            for (uint256 i = 0; i < _prices.length; i++) {
+                InterestRate memory _rate = _rates[i];
+                require(_rate.max <= ONE_HUNDRED_PERCENT && _rate.min <= ONE_HUNDRED_PERCENT, "BondRouter: greater than ONE_HUNDRED_PERCENT");
+                require(_rate.max >= _rate.min, "BondRouter: Max rate must greater min rate");
+                batchInfo[batchId].bondPrice.add(_prices[i]);
+                batchInfo[batchId].interestRates[_prices[i]] = _rate;
+            }
+        } else {
+            batchInfo[batchId].bondPrice.add(100 ether);
+            batchInfo[batchId].bondPrice.add(500 ether);
+            batchInfo[batchId].bondPrice.add(1000 ether);
+            batchInfo[batchId].bondPrice.add(5000 ether);
+            batchInfo[batchId].bondPrice.add(10000 ether);
+
+            batchInfo[batchId].interestRates[100 ether] = InterestRate({max : 100000, min : 50000});
+            // 10%
+            batchInfo[batchId].interestRates[500 ether] = InterestRate({max : 105000, min : 52500});
+            // 12%
+            batchInfo[batchId].interestRates[1000 ether] = InterestRate({max : 108000, min : 54000});
+            // 14%
+            batchInfo[batchId].interestRates[5000 ether] = InterestRate({max : 110000, min : 55000});
+            batchInfo[batchId].interestRates[10000 ether] = InterestRate({max : 115000, min : 57500});
+            // 16%
+        }
+        batchInfo[batchId].status = _active;
+        emit CreateNewBatch(batchId, _config, _backedBond, batchInfo[batchId].bondPrice.values(), _rates);
+    }
+
+    function addOldBatch(BatchConfig memory _config, BackedBond[] memory _backedBond, uint256[] memory _prices, InterestRate[] memory _rates, bool _active)
+    external onlyOperator {
+
+        batchId ++;
         require(_prices.length == _rates.length, "BondRouter: !length");
         batchInfo[batchId].config = _config;
         for (uint256 i = 0; i < _backedBond.length; i++) {
@@ -425,7 +476,6 @@ contract BondRouter is Ownable, BondStruct, Pausable, ReentrancyGuard {
         require(_batchId > 0 && _batchId <= batchId, "SecurityRouter: !_batchId");
         BatchInfo storage _batch = batchInfo[_batchId];
         _batch.raised +=  _raised;
-        _batch.config.totalFundRaise += _raised;
     }
 
     function updateOperators(address _operator, bool _action) external onlyOwner {
